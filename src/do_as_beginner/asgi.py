@@ -32,7 +32,7 @@ def entrypoint() -> None:
     PluginCore().setup()
 
     # Register plugins' cli commands
-    for typer in PluginCore().typers:
+    for typer in PluginCore.typers:
         group.add_typer(typer)
 
     # Execute the commands.
