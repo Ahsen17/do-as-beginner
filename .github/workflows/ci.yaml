@@ -54,8 +54,3 @@ jobs:
           files: |
             dist/*.whl
             dist/*.tar.gz
-
-      - name: Publish to PyPI (Production)
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}

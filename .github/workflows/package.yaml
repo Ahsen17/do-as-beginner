@@ -52,10 +52,3 @@ jobs:
           name: dist
           path: dist/
           retention-days: 30
-
-      - name: Upload to PyPI (Test)
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-          repository-url: https://test.pypi.org/legacy/
-          skip-existing: true
