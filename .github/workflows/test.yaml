@@ -2,13 +2,9 @@ name: Test
 
 on:
   push:
-    branches:
-      - master
-      - develop
+    branches: ["master", "develop"]
   pull_request:
-    branches:
-      - master
-      - develop
+    branches: ["master", "develop"]
 
 jobs:
   test:
@@ -16,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.12"]
     
     steps:
       - name: Checkout code
