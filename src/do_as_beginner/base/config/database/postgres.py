@@ -13,9 +13,6 @@ class PostgresConfig(BaseStruct):
     username: str = ""
     password: str = ""
 
-    conn_max_age: int = 600
-
     pool_enabled: bool = True
     pool_min_size: int = 5
     pool_max_size: int = 20
-    command_timeout: int = 60

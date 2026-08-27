@@ -11,5 +11,6 @@ class ServerConfig(BaseStruct):
     host: str = "localhost"
     port: int = 8080
     debug: bool = False
+    environment: Literal["development", "staging", "production"] = "development"
 
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
