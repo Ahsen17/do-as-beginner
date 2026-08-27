@@ -10,6 +10,9 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "do_as_beginner.config.settings")
+os.environ.setdefault(
+    "DJANGO_SETTINGS_MODULE",
+    f"{os.environ.get('DAB_SERVER_NAME')}.core.settings",
+)
 
 application = get_asgi_application()

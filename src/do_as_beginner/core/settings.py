@@ -9,18 +9,34 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
-from do_as_beginner.base.constants import BASE_DIR
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
+
+import os
+from pathlib import Path
+
+# Environment variables
+APP_NAME = os.environ.get("DAB_SERVER_NAME")
+BASE_DIR = Path(os.environ.get("DAB_SERVER_BASE_DIR")) or Path.cwd().resolve()
+POSTGRES_DATABASE = os.environ.get("DAB_POSTGRES_DATABASE")
+POSTGRES_USERNAME = os.environ.get("DAB_POSTGRES_USERNAME")
+POSTGRES_PASSWORD = os.environ.get("DAB_POSTGRES_PASSWORD")
+POSTGRES_HOST = os.environ.get("DAB_POSTGRES_HOST")
+POSTGRES_PORT = os.environ.get("DAB_POSTGRES_PORT")
+POSTGRES_CONN_MAX_AGE = os.environ.get("DAB_POSTGRES_CONN_MAX_AGE")
+POSTGRES_POOL_ENABLED = os.environ.get("DAB_POSTGRES_POOL_ENABLED", "false")
+POSTGRES_POOL_MIN_SIZE = os.environ.get("DAB_POSTGRES_POOL_MIN_SIZE", "1")
+POSTGRES_POOL_MAX_SIZE = os.environ.get("DAB_POSTGRES_POOL_MAX_SIZE", "10")
+POSTGRES_COMMAND_TIMEOUT = os.environ.get("DAB_POSTGRES_COMMAND_TIMEOUT", "30")
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-1vh@c=j9x6n+@#8lw4&n3g)3y(jd!_+1ra-e4+xn=-4941h(()"  # noqa: S105
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = bool(os.environ.get("DAB_SERVER_DEBUG", "false"))
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -32,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_async_backend",
 ]
 
 MIDDLEWARE = [
@@ -44,7 +61,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "do_as_beginner.config.urls"
+ROOT_URLCONF = f"{APP_NAME}.core.urls"
 
 TEMPLATES = [
     {
@@ -61,7 +78,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "do_as_beginner.config.wsgi.application"
+WSGI_APPLICATION = f"{APP_NAME}.core.wsgi.application"
 
 
 # Database
@@ -69,9 +86,27 @@ WSGI_APPLICATION = "do_as_beginner.config.wsgi.application"
 
 DATABASES = {
     "default": {
+        "ENGINE": "django_async_backend.db.backends.postgresql",
+        "NAME": POSTGRES_DATABASE,
+        "USER": POSTGRES_USERNAME,
+        "PASSWORD": POSTGRES_PASSWORD,
+        "HOST": POSTGRES_HOST,
+        "PORT": POSTGRES_PORT,
+        "CONN_MAX_AGE": POSTGRES_CONN_MAX_AGE,
+        "OPTIONS": {
+            "pool": {
+                "min_size": POSTGRES_POOL_MIN_SIZE,
+                "max_size": POSTGRES_POOL_MAX_SIZE,
+                "command_timeout": POSTGRES_COMMAND_TIMEOUT,
+            }
+            if POSTGRES_POOL_ENABLED
+            else {},
+        },
+    },
+    "testing": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
-    }
+    },
 }
 
 
