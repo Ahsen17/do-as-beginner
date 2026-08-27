@@ -186,6 +186,14 @@ enable_error_code = [
 show_error_codes = true
 pretty = true
 
+[[tool.mypy.overrides]]
+module = [
+  "pytoml",
+  "yaml",
+  "django.*",
+]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib", "--asyncio-mode=auto"]
 filterwarnings = [

@@ -16,18 +16,18 @@ import os
 from pathlib import Path
 
 # Environment variables
-APP_NAME = os.environ.get("DAB_SERVER_NAME")
-BASE_DIR = Path(os.environ.get("DAB_SERVER_BASE_DIR")) or Path.cwd().resolve()
-POSTGRES_DATABASE = os.environ.get("DAB_POSTGRES_DATABASE")
-POSTGRES_USERNAME = os.environ.get("DAB_POSTGRES_USERNAME")
-POSTGRES_PASSWORD = os.environ.get("DAB_POSTGRES_PASSWORD")
-POSTGRES_HOST = os.environ.get("DAB_POSTGRES_HOST")
-POSTGRES_PORT = os.environ.get("DAB_POSTGRES_PORT")
-POSTGRES_CONN_MAX_AGE = os.environ.get("DAB_POSTGRES_CONN_MAX_AGE")
-POSTGRES_POOL_ENABLED = os.environ.get("DAB_POSTGRES_POOL_ENABLED", "false")
-POSTGRES_POOL_MIN_SIZE = os.environ.get("DAB_POSTGRES_POOL_MIN_SIZE", "1")
-POSTGRES_POOL_MAX_SIZE = os.environ.get("DAB_POSTGRES_POOL_MAX_SIZE", "10")
-POSTGRES_COMMAND_TIMEOUT = os.environ.get("DAB_POSTGRES_COMMAND_TIMEOUT", "30")
+APP_NAME = os.environ.get("DAB_SERVER_NAME", "")
+BASE_DIR = Path(os.environ.get("DAB_SERVER_BASE_DIR", APP_NAME)) or Path.cwd().resolve()
+POSTGRES_DATABASE = os.environ.get("DAB_POSTGRES_DATABASE", "")
+POSTGRES_USERNAME = os.environ.get("DAB_POSTGRES_USERNAME", "")
+POSTGRES_PASSWORD = os.environ.get("DAB_POSTGRES_PASSWORD", "")
+POSTGRES_HOST = os.environ.get("DAB_POSTGRES_HOST", "localhost")
+POSTGRES_PORT = int(os.environ.get("DAB_POSTGRES_PORT", "5432"))
+POSTGRES_CONN_MAX_AGE = int(os.environ.get("DAB_POSTGRES_CONN_MAX_AGE", "600"))
+POSTGRES_POOL_ENABLED = bool(os.environ.get("DAB_POSTGRES_POOL_ENABLED", "false"))
+POSTGRES_POOL_MIN_SIZE = int(os.environ.get("DAB_POSTGRES_POOL_MIN_SIZE", "1"))
+POSTGRES_POOL_MAX_SIZE = int(os.environ.get("DAB_POSTGRES_POOL_MAX_SIZE", "10"))
+POSTGRES_COMMAND_TIMEOUT = int(os.environ.get("DAB_POSTGRES_COMMAND_TIMEOUT", "30"))
 
 
 # SECURITY WARNING: keep the secret key used in production secret!

@@ -8,7 +8,7 @@ class PostgresConfig(BaseStruct):
     """Postgres database configuration."""
 
     host: str = "localhost"
-    port: int = "5432"
+    port: int = 5432
     database: str = APP_NAME
     username: str = ""
     password: str = ""

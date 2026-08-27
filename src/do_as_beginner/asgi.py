@@ -35,7 +35,7 @@ def set_environment() -> None:
     os.environ.setdefault("DAB_POSTGRES_COMMAND_TIMEOUT", str(config.postgres.command_timeout))
 
 
-def entrypoint():
+def entrypoint() -> None:
     """Run administrative tasks."""
 
     # Set environment variables

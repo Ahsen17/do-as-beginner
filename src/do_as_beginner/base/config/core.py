@@ -1,4 +1,3 @@
-import os
 from typing import ClassVar, Self
 
 from pydantic import Field
