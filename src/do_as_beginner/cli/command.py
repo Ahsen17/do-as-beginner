@@ -25,7 +25,7 @@ group.add_typer(django_group, name="django")
 @group.command(name="run", help="Run server", context_settings=CONTEXT_SETTINGS)
 def run(args: Args = None) -> None:
     host = os.environ.get("DAB_SERVER_HOST", "127.0.0.1")
-    port = os.environ.get("DAB_SERVER_PORT", "8000")
+    port = int(os.environ.get("DAB_SERVER_PORT", "8000"))
     environment = os.environ.get("DAB_SERVER_ENVIRONMENT", "development")
 
     if environment == "development":
@@ -47,12 +47,10 @@ def run(args: Args = None) -> None:
                 "forget to activate a virtual environment?"
             ) from exc
 
-        host = os.environ.get("DAB_SERVER_HOST", "127.0.0.1")
-        port = int(os.environ.get("DAB_SERVER_PORT", "8000"))
+        # TODO: waiting refactor
         log_level = os.environ.get("DAB_SERVER_LOG_LEVEL", "info")
         debug = os.environ.get("DAB_SERVER_DEBUG", "true") == "true"
 
-        # TODO: waiting refactor
         uvicorn.run(
             get_asgi_application(),
             host=host,

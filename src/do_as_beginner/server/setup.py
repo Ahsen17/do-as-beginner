@@ -18,7 +18,7 @@ class PluginCore(BaseStruct):
 
     installed_apps: list[str] = Field(default_factory=list)
     middlewares: list[str] = Field(default_factory=list)
-    templates: list[str] = Field(default_factory=list)
+    templates: list[dict[str, Any]] = Field(default_factory=list)
     databases: dict[str, Any] = Field(default_factory=dict)
     auth_password_validators: list[dict[str, str]] = Field(default_factory=list)
 
