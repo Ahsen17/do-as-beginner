@@ -4,16 +4,16 @@ version = "0.1.0"
 description = "Do as beginner."
 readme = "README.md"
 authors = [
-    { name = "ahsen17", email = "mesailedward@qq.com" }
+  { name = "ahsen17", email = "mesailedward@qq.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "django",
-    "django-async-backend",
-    "psycopg[binary,pool]",
-    "pydantic",
-    "pytoml",
-    "typer",
+  "django",
+  "django-async-backend",
+  "psycopg[binary,pool]",
+  "pydantic",
+  "pytoml",
+  "typer",
 ]
 
 [build-system]
@@ -22,6 +22,11 @@ requires = ["hatchling", "setuptools"]
 
 [project.scripts]
 app = "do_as_beginner.asgi:entrypoint"
+
+[project.optional-dependencies]
+dev = [
+  "twine",
+]
 
 [dependency-groups]
 docs = [
