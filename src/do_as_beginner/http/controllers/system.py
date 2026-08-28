@@ -4,7 +4,7 @@ from django.http import HttpRequest
 from django.urls import path
 from django.urls.resolvers import URLResolver
 
-from do_as_beginner.http.base import BaseController, require_GET, require_POST
+from do_as_beginner.http.base import BaseController, require_POST
 from do_as_beginner.shared import GenericResponse
 
 __all__ = ("SystemController",)
