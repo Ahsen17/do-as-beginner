@@ -2,7 +2,7 @@ from typing import Any
 
 from django.http import HttpRequest
 from django.urls import path
-from django.urls.resolvers import URLResolver
+from django.urls.resolvers import URLPattern, URLResolver
 
 from do_as_beginner.http.base import BaseController, require_GET
 from do_as_beginner.shared import GenericResponse
@@ -25,12 +25,12 @@ class SystemController(BaseController):
 
         return GenericResponse(code=200, message="ok")
 
-    def get_urls(self) -> list[URLResolver]:
+    def get_urls(self) -> list[URLResolver | URLPattern]:
 
         return [
             path("health/", self.health, name="System health"),
         ]
 
     @property
-    def urls(self) -> tuple[list[URLResolver], str, str]:
+    def urls(self) -> tuple[list[URLResolver | URLPattern], str, str]:
         return self.get_urls(), "system", self.name

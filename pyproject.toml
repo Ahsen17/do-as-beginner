@@ -47,6 +47,8 @@ lint = [
   "ruff",
   "slotscheck",
   "types-aiofiles",
+  "types-pyyaml",
+  "django-stubs",
 ]
 test = [
   "coverage",

@@ -43,6 +43,6 @@ class GenericResponse(HttpResponse):
                     "data": data,
                 },
                 cls=DjangoJSONEncoder,
-            ),
+            ).encode("utf-8"),
             **kwargs,
         )
