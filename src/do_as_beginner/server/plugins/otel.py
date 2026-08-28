@@ -1,11 +1,19 @@
 import atexit
+import logging
 import os
 import socket
+from logging import _nameToLevel
 from typing import TYPE_CHECKING
 
 from opentelemetry import metrics, trace
+from opentelemetry._logs import set_logger_provider
+from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.django import DjangoInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
@@ -33,9 +41,9 @@ class OtelPlugin(PluginProtocol):
 
         self._otel_resource = Resource.create(
             {
-                "server.name": self._config.server.name,
-                "server.env": self._config.server.environment,
-                "server.instance": f"{hostname}:{pid}",
+                "service.name": self._config.server.name,
+                "service.instance.id": f"{hostname}:{pid}",
+                "deployment.environment.name": self._config.server.environment,
             }
         )
 
@@ -70,5 +78,30 @@ class OtelPlugin(PluginProtocol):
         )
         metrics.set_meter_provider(meter_provider)
 
+        # Logs
+        logger_provider = LoggerProvider(resource=self._otel_resource)
+        logger_provider.add_log_record_processor(
+            BatchLogRecordProcessor(
+                OTLPLogExporter(
+                    endpoint=self._config.otel.endpoint,
+                    insecure=True,
+                )
+            )
+        )
+        set_logger_provider(logger_provider)
+
+        otel_log_handler = LoggingHandler(
+            level=_nameToLevel[self._config.server.log_level],
+            logger_provider=logger_provider,
+        )
+
+        for logger_name in ("do_as_beginner", "django.request"):
+            python_logger = logging.getLogger(logger_name)
+            python_logger.addHandler(otel_log_handler)
+
+        DjangoInstrumentor().instrument()
+        RequestsInstrumentor().instrument()
+
         atexit.register(tracer_provider.shutdown)
         atexit.register(meter_provider.shutdown)
+        atexit.register(logger_provider.shutdown)

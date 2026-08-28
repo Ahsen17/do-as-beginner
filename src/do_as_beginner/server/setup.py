@@ -29,15 +29,14 @@ class PluginCore(BaseStruct):
     def setup(self) -> None:
         """Setup plugin core."""
 
+        settings.configure()
+
         self.setup_installed_apps()
         self.setup_middleware()
         self.setup_templates()
         self.setup_databases()
         self.setup_auth_password_validators()
-        self.setup_plugins()
         self.setup_loggings()
-
-        settings.configure()
 
         settings.SECRET_KEY = "django-insecure-1vh@c=j9x6n+@#8lw4&n3g)3y(jd!_+1ra-e4+xn=-4941h(()"  # noqa: S105
         settings.DEBUG = self.config.server.debug
@@ -54,6 +53,8 @@ class PluginCore(BaseStruct):
         settings.USE_TZ = True
         settings.STATIC_URL = "static/"
         settings.LOGGING = self.logging
+
+        self.setup_plugins()
 
     def setup_installed_apps(self) -> None:
         self.installed_apps.extend(
