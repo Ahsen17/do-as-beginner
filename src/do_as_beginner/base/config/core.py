@@ -6,6 +6,7 @@ from do_as_beginner.base.schemas import BaseStruct
 
 from .constants import BASE_DIR
 from .database import PostgresConfig
+from .otel import OtelConfig
 from .server import ServerConfig
 
 __all__ = ("AppConfig",)
@@ -18,6 +19,7 @@ class AppConfig(BaseStruct):
 
     server: ServerConfig = Field(default_factory=ServerConfig)
     postgres: PostgresConfig = Field(default_factory=PostgresConfig)
+    otel: OtelConfig = Field(default_factory=OtelConfig)
 
     @classmethod
     def load(cls, filename: str = "config.yaml") -> Self:
