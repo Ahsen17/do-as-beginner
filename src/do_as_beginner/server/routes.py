@@ -5,11 +5,5 @@ from do_as_beginner.http import BaseController
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    *[
-        path(
-            f"{cls.path}/",
-            cls().urls,
-        )
-        for cls in BaseController.__subclasses__()
-    ],
+    *[path(cls.path, cls().urls) for cls in BaseController.__subclasses__()],
 ]

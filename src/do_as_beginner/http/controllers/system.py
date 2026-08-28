@@ -4,7 +4,7 @@ from django.http import HttpRequest
 from django.urls import path
 from django.urls.resolvers import URLResolver
 
-from do_as_beginner.http.base import BaseController, require_POST
+from do_as_beginner.http.base import BaseController, require_GET
 from do_as_beginner.shared import GenericResponse
 
 __all__ = ("SystemController",)
@@ -13,10 +13,10 @@ __all__ = ("SystemController",)
 class SystemController(BaseController):
     """System Controller Class"""
 
-    path = "system"
+    path = "system/"
     name = "System Controller"
 
-    @require_POST
+    @require_GET
     async def health(
         self,
         request: HttpRequest,
@@ -32,5 +32,5 @@ class SystemController(BaseController):
         ]
 
     @property
-    def urls(self) -> tuple[URLResolver, str, str]:
+    def urls(self) -> tuple[list[URLResolver], str, str]:
         return self.get_urls(), "system", self.name

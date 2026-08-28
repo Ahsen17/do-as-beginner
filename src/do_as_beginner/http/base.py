@@ -25,11 +25,12 @@ class BaseController:
     path: ClassVar[str]
     name: ClassVar[str]
 
+    # TODO: consider register urls with decorators, like @get, @post and so on.
     def get_urls(self) -> list[URLResolver | URLPattern]:
 
         raise NotImplementedError("Subclasses must implement the get_urls method.")
 
     @property
-    def urls(self) -> tuple[URLResolver | URLPattern, str, str]:
+    def urls(self) -> tuple[list[URLResolver | URLPattern], str, str]:
 
         raise NotImplementedError("Subclasses must implement the url property.")
