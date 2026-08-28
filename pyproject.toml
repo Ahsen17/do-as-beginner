@@ -19,6 +19,7 @@ dependencies = [
   "pydantic",
   "pytoml",
   "typer",
+  "uvicorn[standard]",
 ]
 
 [build-system]

@@ -26,3 +26,13 @@ def collect(args: Args = None) -> None:
 def find(args: Args = None) -> None:
 
     _django_command("findstatic", *(args or ()))
+
+
+@stf_group.command(
+    name="runserver",
+    help="Run the Django development server",
+    context_settings=CONTEXT_SETTINGS,
+)
+def runserver(args: Args = None) -> None:
+
+    _django_command("runserver", *(args or ()))
