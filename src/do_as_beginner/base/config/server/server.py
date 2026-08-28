@@ -1,7 +1,11 @@
 from typing import Literal
 
+from pydantic import Field
+
 from do_as_beginner.base.config.constants import APP_NAME
 from do_as_beginner.base.schemas import BaseStruct
+
+from .master import MasterConfig
 
 __all__ = ("ServerConfig",)
 
@@ -18,3 +22,4 @@ class ServerConfig(BaseStruct):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
 
     workers: int = 1
+    master: MasterConfig = Field(default_factory=MasterConfig)
