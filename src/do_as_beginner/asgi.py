@@ -30,8 +30,9 @@ def create_application() -> ASGIHandler:
     # Set environment variables
     set_environment()
 
-    # Setup all plugins
-    PluginCore().setup()
+    if int(os.environ.get("DAB_SERVER_WORKERS", "1")) != 1:
+        # Setup all plugins
+        PluginCore().setup()
 
     try:
         from django.core.asgi import get_asgi_application  # noqa: PLC0415
