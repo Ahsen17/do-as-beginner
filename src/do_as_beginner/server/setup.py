@@ -1,5 +1,6 @@
 from typing import Any, ClassVar
 
+import structlog
 from django.conf import settings
 from pydantic import Field
 from typer import Typer
@@ -23,6 +24,7 @@ class PluginCore(BaseStruct):
     templates: list[dict[str, Any]] = Field(default_factory=list)
     databases: dict[str, Any] = Field(default_factory=dict)
     auth_password_validators: list[dict[str, str]] = Field(default_factory=list)
+    logging: dict[str, Any] = Field(default_factory=dict)
 
     def setup(self) -> None:
         """Setup plugin core."""
@@ -33,6 +35,7 @@ class PluginCore(BaseStruct):
         self.setup_databases()
         self.setup_auth_password_validators()
         self.setup_plugins()
+        self.setup_loggings()
 
         settings.configure()
 
@@ -50,6 +53,7 @@ class PluginCore(BaseStruct):
         settings.USE_I18N = True
         settings.USE_TZ = True
         settings.STATIC_URL = "static/"
+        settings.LOGGING = self.logging
 
     def setup_installed_apps(self) -> None:
         self.installed_apps.extend(
@@ -61,6 +65,7 @@ class PluginCore(BaseStruct):
                 "django.contrib.messages",
                 "django.contrib.staticfiles",
                 "django_async_backend",
+                "django_structlog",
             ]
         )
 
@@ -74,6 +79,7 @@ class PluginCore(BaseStruct):
                 "django.contrib.auth.middleware.AuthenticationMiddleware",
                 "django.contrib.messages.middleware.MessageMiddleware",
                 "django.middleware.clickjacking.XFrameOptionsMiddleware",
+                "django_structlog.middlewares.RequestMiddleware",
             ]
         )
 
@@ -138,6 +144,43 @@ class PluginCore(BaseStruct):
                 },
             ]
         )
+
+    def setup_loggings(self) -> None:
+
+        log_dir = BASE_DIR / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+
+        self.logging = {
+            "version": 1,
+            "disable_existing_loggers": False,
+            "formatters": {
+                "json_formatter": {
+                    "()": structlog.stdlib.ProcessorFormatter,
+                    "processor": structlog.processors.JSONRenderer(),
+                },
+                "console_formatter": {
+                    "()": structlog.stdlib.ProcessorFormatter,
+                    "processor": structlog.dev.ConsoleRenderer(),
+                },
+            },
+            "handlers": {
+                "console": {
+                    "class": "logging.StreamHandler",
+                    "formatter": "console_formatter",
+                },
+                "json_file": {
+                    "class": "logging.handlers.WatchedFileHandler",
+                    "filename": str(log_dir.joinpath("json.log").resolve()),
+                    "formatter": "json_formatter",
+                },
+            },
+            "loggers": {
+                "django_structlog": {
+                    "handlers": ["console", "json_file"],
+                    "level": "INFO",
+                },
+            },
+        }
 
     def setup_plugins(self) -> None:
 
