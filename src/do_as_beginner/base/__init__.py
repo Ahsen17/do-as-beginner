@@ -1,4 +1,10 @@
-from .config import AppConfig, OtelConfig, PostgresConfig, ServerConfig
+from .config import (
+    AppConfig,
+    OtelConfig,
+    PostgresConfig,
+    RedisConfig,
+    ServerConfig,
+)
 from .schemas import BaseStruct
 
 __all__ = (
@@ -6,5 +12,6 @@ __all__ = (
     "BaseStruct",
     "OtelConfig",
     "PostgresConfig",
+    "RedisConfig",
     "ServerConfig",
 )

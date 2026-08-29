@@ -20,6 +20,7 @@ dependencies = [
   "psycopg[binary,pool]",
   "pydantic",
   "pytoml",
+  "redis[hiredis]>=8.1.0",
   "structlog",
   "typer",
   "uvicorn[standard]",

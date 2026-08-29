@@ -1,3 +1,4 @@
+from .cache import RedisConfig
 from .core import AppConfig
 from .database import PostgresConfig
 from .otel import OtelConfig
@@ -7,5 +8,6 @@ __all__ = (
     "AppConfig",
     "OtelConfig",
     "PostgresConfig",
+    "RedisConfig",
     "ServerConfig",
 )
