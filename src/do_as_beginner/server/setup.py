@@ -8,7 +8,7 @@ from typer import Typer
 from do_as_beginner.base import AppConfig, BaseStruct
 from do_as_beginner.base.config.constants import APP_NAME, BASE_DIR
 
-from .plugins import OtelPlugin
+from .plugins import OtelPlugin, RedisPlugin
 
 __all__ = ("PluginCore",)
 
@@ -186,3 +186,4 @@ class PluginCore(BaseStruct):
     def setup_plugins(self) -> None:
 
         OtelPlugin(self.config).setup()
+        RedisPlugin(self.config).setup()
