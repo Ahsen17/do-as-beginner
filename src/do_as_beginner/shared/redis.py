@@ -25,9 +25,15 @@ class RedisFactory:
                 timeout=self._config.connection_timeout,
             )
 
-    def create(self) -> Redis:
+    def create(self, decode_responses: bool = False) -> Redis:
 
         if self._config.pool_enabled and self._conn_pool is not None:
-            return Redis(connection_pool=self._conn_pool)
+            return Redis(
+                connection_pool=self._conn_pool,
+                decode_responses=decode_responses,
+            )
 
-        return Redis.from_url(url=self._config.dsn)
+        return Redis.from_url(
+            url=self._config.dsn,
+            decode_responses=decode_responses,
+        )

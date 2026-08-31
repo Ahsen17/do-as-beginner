@@ -20,9 +20,10 @@ dependencies = [
   "psycopg[binary,pool]",
   "pydantic",
   "pytoml",
-  "redis[hiredis]>=8.1.0",
+  "redis[hiredis]",
   "structlog",
   "typer",
+  "uuid-utils",
   "uvicorn[standard]",
 ]
 
@@ -62,6 +63,7 @@ lint = [
 ]
 test = [
   "coverage",
+  "fakeredis",
   "pytest",
   "pytest-asyncio",
   "pytest-cov",
