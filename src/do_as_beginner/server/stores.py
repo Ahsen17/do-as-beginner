@@ -32,8 +32,7 @@ def provide[T](name: str, cls: type[T]) -> T:
 
     if not isinstance(dependency, cls):
         raise TypeError(
-            f"Dependency {name!r} expected {cls.__qualname__}, "
-            f"but got {type(dependency).__qualname__}",
+            f"Dependency {name!r} expected {cls.__qualname__}, but got {type(dependency).__qualname__}",
         )
 
     return dependency
