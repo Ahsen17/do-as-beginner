@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+  "celery",
   "django",
   "django-async-backend",
   "django-structlog",
@@ -33,6 +34,8 @@ requires = ["hatchling", "setuptools"]
 
 [project.scripts]
 app = "do_as_beginner.asgi:entrypoint"
+dab = "do_as_beginner.asgi:entrypoint"
+cl = "do_as_beginner.asgi:celery_entrypoint"
 
 [project.optional-dependencies]
 dev = [
@@ -208,8 +211,9 @@ pretty = true
 [[tool.mypy.overrides]]
 module = [
   "pytoml",
-  "yaml",
-  "django.*",
+  "celery",
+  "celery.*",
+  "kombu",
 ]
 ignore_missing_imports = true
 

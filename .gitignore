@@ -18,6 +18,7 @@ settings.*.json
 # Temp files
 *.log
 tmp/
+.runtime/
 
 # Ai coding
 .codex/
