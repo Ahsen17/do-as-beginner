@@ -1,0 +1,38 @@
+name: Build image
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  compose-images:
+    name: Validate compose images
+    runs-on: ubuntu-latest
+    # 校验 compose.yaml 声明的镜像层：配置可解析、引用镜像可拉取、dab 运行时基础镜像可实例化。
+    # 当前 compose 服务无自建 Dockerfile（uv 基础镜像 + bind-mount），故不构建自产镜像、也不 push。
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate compose configuration
+        run: |
+          docker compose config --quiet
+          docker compose config --images
+
+      - name: Pull compose-referenced images
+        # 拉取 compose 引用的全部镜像（app/celery_worker 的 uv 基础镜像 + postgres/redis/rabbitmq），
+        # 验证 tag 存在且可拉取，防止镜像/tag 失效或笔误。
+        run: |
+          docker compose pull
+
+      - name: Smoke-check dab runtime base image
+        # 用 --no-deps 跳过依赖健康检查，只实例化 app 服务的 uv 基础镜像，
+        # 确认镜像可用且 uv 可执行（app/celery_worker 启动依赖 uv sync）。
+        run: |
+          docker compose run --rm --no-deps app sh -c 'uv --version'

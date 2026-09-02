@@ -1,0 +1,107 @@
+name: do-as-beginner
+
+x-do-as-beginner: &do-as-beginner
+  image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+  working_dir: /workspace
+  restart: unless-stopped
+  environment:
+    UV_PROJECT_ENVIRONMENT: /opt/venv
+    CELERY_BROKER_URL: amqp://${RABBITMQ_DEFAULT_USER:-dab}:${RABBITMQ_DEFAULT_PASS:-dab-dev-password}@rabbitmq:5672/${RABBITMQ_DEFAULT_VHOST:-dab}
+  volumes:
+    - .:/workspace
+    - ./config.yaml:/workspace/config.yaml:ro
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
+
+services:
+  app:
+    <<: *do-as-beginner
+    command:
+      - sh
+      - -c
+      - uv sync --frozen &&
+        uv run app django makemigrations &&
+        uv run app django migrate &&
+        uv run app run
+    ports:
+      - "${DAB_SERVER_PORT:-8000}:8000"
+
+  celery_worker:
+    <<: *do-as-beginner
+    command:
+      - sh
+      - -c
+      - >-
+        uv sync --frozen &&
+        uv run cl worker
+        --loglevel=${CELERY_LOG_LEVEL:-INFO}
+        --queues=dab.tasks
+        --concurrency=${CELERY_WORKER_CONCURRENCY:-4}
+        --hostname=worker@%h
+
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dab}
+      POSTGRES_USER: ${POSTGRES_USER:-dab}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dab}
+    ports:
+      - "${POSTGRES_BIND_HOST:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    ports:
+      - "${REDIS_BIND_HOST:-127.0.0.1}:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  rabbitmq:
+    image: rabbitmq:4.3.5-management
+    hostname: rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-dab}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-dab}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST:-dab}
+    ports:
+      - "${RABBITMQ_BIND_HOST:-127.0.0.1}:${RABBITMQ_AMQP_PORT:-5672}:5672"
+      - "${RABBITMQ_BIND_HOST:-127.0.0.1}:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./assets/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./assets/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+volumes:
+  postgres_data:
+    name: postgres_data
+  redis_data:
+    name: redis_data
+  rabbitmq_data:
+    name: rabbitmq_data

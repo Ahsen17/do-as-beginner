@@ -1,14 +1,15 @@
 from typing import Any, ClassVar
 
 import structlog
-from django.conf import settings
+from django.conf import LazySettings, settings
+from kombu import Exchange, Queue
 from pydantic import Field
 from typer import Typer
 
 from do_as_beginner.base import AppConfig, BaseStruct
 from do_as_beginner.base.config.constants import APP_NAME, BASE_DIR
 
-from .plugins import OtelPlugin
+from .plugins import OtelPlugin, RedisPlugin
 
 __all__ = ("PluginCore",)
 
@@ -54,6 +55,7 @@ class PluginCore(BaseStruct):
         settings.STATIC_URL = "static/"
         settings.LOGGING = self.logging
 
+        self.setup_celery(settings)
         self.setup_plugins()
 
     def setup_installed_apps(self) -> None:
@@ -183,6 +185,57 @@ class PluginCore(BaseStruct):
             },
         }
 
+    def setup_celery(self, settings: LazySettings) -> None:
+
+        settings.CELERY_BROKER_URL = self.config.celery.broker_dsn
+        settings.CELERY_BROKER_TRANSPORT_OPTIONS = {"confirm_publish": True}
+        settings.CELERY_TASK_IGNORE_RESULT = True
+        settings.CELERY_STORE_ERROR_EVEN_IF_IGNORED = False
+        settings.CELERY_TASK_SERIALIZER = "json"
+        settings.CELERY_ACCEPT_CONTENT = ["json"]
+        settings.CELERY_TIMEZONE = "Asia/Shanghai"
+        settings.CELERY_ENABLE_UTC = True
+        settings.CELERY_TASK_ACKS_LATE = True
+        settings.CELERY_TASK_REJECT_ON_WORKER_LOST = True
+        settings.CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+        settings.CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+        settings.CELERY_WORKER_CANCEL_LONG_RUNNING_TASKS_ON_CONNECTION_LOSS = True
+        settings.CELERY_TASK_SOFT_TIME_LIMIT = 240
+        settings.CELERY_TASK_TIME_LIMIT = 300
+        settings.CELERY_TASK_TRACK_STARTED = True
+
+        task_exchange = Exchange(name="dab.tasks.exchange", type="direct", durable=True)
+        dead_letter_exchange = Exchange("dab.tasks.dlx", type="direct", durable=True)
+
+        settings.CELERY_TASK_QUEUES = (
+            Queue(
+                name="dab.tasks",
+                exchange=task_exchange,
+                routing_key="tasks",
+                durable=True,
+                queue_arguments={
+                    "x-queue-type": "quorum",
+                    "x-delivery-limit": 5,
+                    "x-dead-letter-exchange": dead_letter_exchange.name,
+                    "x-dead-letter-routing-key": "dab",
+                },
+            ),
+            Queue(
+                name="dab.tasks.dlq",
+                exchange=dead_letter_exchange,
+                routing_key="dead",
+                durable=True,
+                queue_arguments={"x-queue-type": "quorum"},
+            ),
+        )
+        settings.CELERY_TASK_DEFAULT_QUEUE = "dab.tasks"
+        settings.CELERY_TASK_DEFAULT_EXCHANGE = "dab.tasks.exchange"
+        settings.CELERY_TASK_DEFAULT_EXCHANGE_TYPE = "direct"
+        settings.CELERY_TASK_DEFAULT_ROUTING_KEY = "tasks"
+        settings.CELERY_TASK_DEFAULT_PRIORITY = 1
+        settings.CELERY_TASK_CREATE_MISSING_QUEUES = False
+
     def setup_plugins(self) -> None:
 
         OtelPlugin(self.config).setup()
+        RedisPlugin(self.config).setup()

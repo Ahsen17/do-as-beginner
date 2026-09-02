@@ -4,6 +4,8 @@ from pydantic import Field
 
 from do_as_beginner.base.schemas import BaseStruct
 
+from .cache import RedisConfig
+from .celery import CeleryConfig
 from .constants import BASE_DIR
 from .database import PostgresConfig
 from .otel import OtelConfig
@@ -20,6 +22,8 @@ class AppConfig(BaseStruct):
     server: ServerConfig = Field(default_factory=ServerConfig)
     postgres: PostgresConfig = Field(default_factory=PostgresConfig)
     otel: OtelConfig = Field(default_factory=OtelConfig)
+    redis: RedisConfig = Field(default_factory=RedisConfig)
+    celery: CeleryConfig = Field(default_factory=CeleryConfig)
 
     @classmethod
     def load(cls, filename: str = "config.yaml") -> Self:

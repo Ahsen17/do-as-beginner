@@ -2,7 +2,11 @@
 """Django's command-line utility for administrative tasks."""
 
 import os
+import sys
 
+from celery import Celery
+from django.apps import apps
+from django.conf import settings
 from django.core.handlers.asgi import ASGIHandler
 
 from .base import AppConfig
@@ -30,8 +34,7 @@ def create_application() -> ASGIHandler:
     # Set environment variables
     set_environment()
 
-    if int(os.environ.get("DAB_SERVER_WORKERS", "1")) != 1:
-        # Setup all plugins
+    if not settings.configured:
         PluginCore().setup()
 
     try:
@@ -47,6 +50,26 @@ def create_application() -> ASGIHandler:
     return get_asgi_application()
 
 
+def celery_entrypoint() -> None:
+
+    # Set environment variables
+    set_environment()
+
+    if not settings.configured:
+        PluginCore().setup()
+
+    if not apps.ready:
+        import django  # noqa: PLC0415
+
+        django.setup()
+
+    cl = Celery(APP_NAME)
+    cl.config_from_object("django.conf:settings", namespace="CELERY")
+    cl.autodiscover_tasks()
+
+    cl.start(argv=sys.argv[1:])
+
+
 def entrypoint() -> None:
     """Run administrative tasks."""
 
@@ -54,7 +77,8 @@ def entrypoint() -> None:
     set_environment()
 
     # Setup all plugins
-    PluginCore().setup()
+    if not settings.configured:
+        PluginCore().setup()
 
     # Register plugins' cli commands
     for typer in PluginCore.typers:

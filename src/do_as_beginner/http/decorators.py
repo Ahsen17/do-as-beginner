@@ -10,7 +10,6 @@ from do_as_beginner.shared import GenericResponse
 if TYPE_CHECKING:
     from django.http import HttpRequest
 
-__all__ = ("require_http_methods",)
 
 T = TypeVar("T", bound=Callable[..., Any])
 
