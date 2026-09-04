@@ -75,7 +75,7 @@
       "vhost": "dab",
       "destination": "dab.tasks",
       "destination_type": "queue",
-      "routing_key": "task",
+      "routing_key": "tasks",
       "arguments": {}
     },
     {
