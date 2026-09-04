@@ -794,9 +794,9 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "autogen-agentchat", specifier = ">=0.7.5" },
-    { name = "autogen-core", specifier = ">=0.7.5" },
-    { name = "autogen-ext", extras = ["openai"], specifier = ">=0.7.5" },
+    { name = "autogen-agentchat" },
+    { name = "autogen-core" },
+    { name = "autogen-ext", extras = ["openai"] },
     { name = "celery" },
     { name = "django" },
     { name = "django-async-backend" },
