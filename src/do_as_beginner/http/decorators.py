@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from django.utils.log import log_response
 
+from do_as_beginner.server.di import get_default_container
 from do_as_beginner.shared import GenericResponse
 
 if TYPE_CHECKING:
@@ -39,15 +40,13 @@ def require_http_methods(request_method_list: list[str]) -> Callable[[T], T]:
     """
 
     def decorator(func: T) -> T:
-
-        unwrapped = cast("Any", func).__func__ if isinstance(func, (classmethod, staticmethod)) else func
+        unwrapped = cast("Any", func).__func__ if isinstance(func, classmethod | staticmethod) else func
         func_signature = signature(cast("Callable[..., Any]", unwrapped))
 
         if iscoroutinefunction(unwrapped):
 
             @wraps(cast("Callable[..., Any]", unwrapped))
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
-
                 request = cast(
                     "HttpRequest | None",
                     func_signature.bind_partial(*args, **kwargs).arguments.get("request"),
@@ -56,13 +55,13 @@ def require_http_methods(request_method_list: list[str]) -> Callable[[T], T]:
                 if request is None or request.method not in request_method_list:
                     return _method_not_allowed(request)
 
-                return await cast("Callable[..., Any]", unwrapped)(*args, **kwargs)
+                injected = await get_default_container().ainject(unwrapped)
+                return await cast("Callable[..., Any]", unwrapped)(*args, **{**kwargs, **injected})
 
             return cast("T", async_wrapper)
 
         @wraps(cast("Callable[..., Any]", unwrapped))
         def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
-
             request = cast(
                 "HttpRequest | None",
                 func_signature.bind_partial(*args, **kwargs).arguments.get("request"),
@@ -71,7 +70,8 @@ def require_http_methods(request_method_list: list[str]) -> Callable[[T], T]:
             if request is None or request.method not in request_method_list:
                 return _method_not_allowed(request)
 
-            return cast("Callable[..., Any]", unwrapped)(*args, **kwargs)
+            injected = get_default_container().inject(unwrapped)
+            return cast("Callable[..., Any]", unwrapped)(*args, **{**kwargs, **injected})
 
         return cast("T", sync_wrapper)
 
