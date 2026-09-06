@@ -18,7 +18,12 @@ class TaskPriority(IntEnum):
 
 
 class RetriableTask(Task):  # type: ignore
-    """A Celery task that can be retried on failure."""
+    """A Celery task that automatically retries transient failures.
+
+    Delivery semantics (``acks_late``, ``reject_on_worker_lost``,
+    ``acks_on_failure_or_timeout``) are configured globally in ``PluginCore``
+    (single source of truth) and deliberately not duplicated here.
+    """
 
     abstract = True
 
@@ -31,6 +36,3 @@ class RetriableTask(Task):  # type: ignore
     retry_backoff: int = 5  # seconds
     retry_backoff_max: int = 300
     retry_jitter: bool = True
-
-    acks_late: bool = True
-    reject_on_woker_lost: bool = True
