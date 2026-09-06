@@ -23,11 +23,7 @@ class OpenAIEmbedder(EmbedderProtocol):
             api_key=self._options.api_key,
         )
 
-    async def embed(
-        self,
-        *document: str,
-        dimensions: int = 2056,
-    ) -> list[Embedding]:
+    async def embed(self, *document: str, dimensions: int = 2056) -> list[Embedding]:
 
         return [
             Embedding(
