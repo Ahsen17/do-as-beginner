@@ -1,20 +1,6 @@
-from enum import IntEnum, auto
-
 from celery import Task
 
-__all__ = (
-    "RetriableTask",
-    "TaskPriority",
-)
-
-
-class TaskPriority(IntEnum):
-    """Task priority levels"""
-
-    LOW = auto()
-    DEFAULT = auto()
-    HIGH = auto()
-    URGENT = auto()
+__all__ = ("RetriableTask",)
 
 
 class RetriableTask(Task):  # type: ignore

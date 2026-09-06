@@ -160,9 +160,35 @@ max-complexity = 12
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402", "F401"]
+"**/migrations/*.py" = ["Q000"]
 "**/{tests,docs,tools}/*" = ["E402"]
 "docs/**/*.*" = ["S", "B", "DTZ", "A", "TC", "ERA", "D", "RET"]
 "tests/**/*.*" = [
+  "A",
+  "ARG",
+  "B",
+  "BLE",
+  "C901",
+  "D",
+  "DTZ",
+  "EM",
+  "FBT",
+  "G",
+  "N",
+  "PGH",
+  "PIE",
+  "PLR",
+  "PLW",
+  "PTH",
+  "RSE",
+  "S",
+  "S101",
+  "SIM",
+  "TC",
+  "TRY",
+  "E721",
+]
+"tests_integration/**/*.py" = [
   "A",
   "ARG",
   "B",
@@ -193,6 +219,7 @@ line-ending = "lf"
 indent-style = "space"
 docstring-code-format = true
 docstring-code-line-length = 88
+exclude = ["**/migrations/*.py"]
 
 [tool.mypy]
 packages = ["do_as_beginner", "tests"]
