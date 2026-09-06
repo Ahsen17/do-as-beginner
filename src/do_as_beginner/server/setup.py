@@ -189,7 +189,9 @@ class PluginCore(BaseStruct):
 
         settings.CELERY_BROKER_URL = self.config.celery.broker_dsn
         settings.CELERY_BROKER_TRANSPORT_OPTIONS = {"confirm_publish": True}
-        # No Celery result backend: task results/states are persisted in app tables instead.
+        # No Celery result backend for now: with IGNORE_RESULT, Celery itself persists nothing.
+        # Persisting task results/states to self-managed app tables is a planned feature and is
+        # NOT wired up yet -- until then failures are only observable via logs and the DLQ.
         settings.CELERY_TASK_IGNORE_RESULT = True
         settings.CELERY_STORE_ERROR_EVEN_IF_IGNORED = False
         settings.CELERY_TASK_SERIALIZER = "json"
@@ -198,9 +200,13 @@ class PluginCore(BaseStruct):
         settings.CELERY_ENABLE_UTC = True
         settings.CELERY_TASK_ACKS_LATE = True
         settings.CELERY_TASK_REJECT_ON_WORKER_LOST = True
-        # Reject unhandled failures so the broker redelivers them; after the quorum
-        # x-delivery-limit (5) they converge to the DLQ instead of being silently dropped.
-        # Task code should catch domain errors itself and only let unexpected errors surface.
+        # acks_on_failure_or_timeout=False + acks_late: an unhandled failure is not acked, the
+        # broker redelivers it, and after the quorum x-delivery-limit (5) it is dead-lettered to
+        # dab.tasks.dlq instead of being silently dropped. Task code should catch domain errors
+        # itself and let only unexpected errors surface.
+        # NOTE: autoretry() re-publishes a fresh message that resets the broker delivery budget,
+        # so the effective execution bound is (1 + autoretry) per broker delivery, not a flat 5.
+        # The exact interplay is to be verified by integration tests.
         settings.CELERY_TASK_ACKS_ON_FAILURE_OR_TIMEOUT = False
         settings.CELERY_WORKER_PREFETCH_MULTIPLIER = 1
         settings.CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True

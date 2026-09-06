@@ -4,9 +4,10 @@ x-do-as-beginner: &do-as-beginner
   image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
   working_dir: /workspace
   restart: unless-stopped
+  # Broker DSN is read from config.yaml (mounted read-only below) by PluginCore.setup_celery;
+  # no CELERY_BROKER_URL env var here so config.yaml stays the single source of truth.
   environment:
     UV_PROJECT_ENVIRONMENT: /opt/venv
-    CELERY_BROKER_URL: amqp://${RABBITMQ_DEFAULT_USER:-dab}:${RABBITMQ_DEFAULT_PASS:-dab-dev-password}@rabbitmq:5672/${RABBITMQ_DEFAULT_VHOST:-dab}
   volumes:
     - .:/workspace
     - ./config.yaml:/workspace/config.yaml:ro
