@@ -32,18 +32,72 @@ services:
     ports:
       - "${DAB_SERVER_PORT:-8000}:8000"
 
-  celery_worker:
+  # One worker group per priority tier. Concurrency is injected by the celery
+  # entrypoint from config.yaml (celery.worker_concurrency: urgent4/high2/default1/low1),
+  # so no -c is pinned here.
+  celery_worker_urgent:
     <<: *do-as-beginner
     command:
       - sh
       - -c
-      - >-
-        uv sync --frozen &&
+      - uv sync --frozen &&
         uv run cl worker
         --loglevel=${CELERY_LOG_LEVEL:-INFO}
-        --queues=dab.tasks
-        --concurrency=${CELERY_WORKER_CONCURRENCY:-4}
-        --hostname=worker@%h
+        --queues=dab.tasks.urgent
+        --hostname=urgent@%h
+
+  celery_worker_high:
+    <<: *do-as-beginner
+    command:
+      - sh
+      - -c
+      - uv sync --frozen &&
+        uv run cl worker
+        --loglevel=${CELERY_LOG_LEVEL:-INFO}
+        --queues=dab.tasks.high
+        --hostname=high@%h
+
+  celery_worker_default:
+    <<: *do-as-beginner
+    command:
+      - sh
+      - -c
+      - uv sync --frozen &&
+        uv run cl worker
+        --loglevel=${CELERY_LOG_LEVEL:-INFO}
+        --queues=dab.tasks.default
+        --hostname=default@%h
+
+  celery_worker_low:
+    <<: *do-as-beginner
+    command:
+      - sh
+      - -c
+      - uv sync --frozen &&
+        uv run cl worker
+        --loglevel=${CELERY_LOG_LEVEL:-INFO}
+        --queues=dab.tasks.low
+        --hostname=low@%h
+
+  celery_worker_internal:
+    <<: *do-as-beginner
+    command:
+      - sh
+      - -c
+      - uv sync --frozen &&
+        uv run cl worker
+        --loglevel=${CELERY_LOG_LEVEL:-INFO}
+        --queues=dab.tasks.internal
+        --concurrency=1
+        --hostname=internal@%h
+
+  celery_beat:
+    <<: *do-as-beginner
+    command:
+      - sh
+      - -c
+      - uv sync --frozen &&
+        uv run cl beat --loglevel=${CELERY_LOG_LEVEL:-INFO}
 
   postgres:
     image: postgres:17

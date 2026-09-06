@@ -1,29 +1,70 @@
 {
-  "users": [
+  "queues": [
     {
-      "name": "dab",
-      "password_hash": "REFCMTBCgzOlzRs8Htp1eN/giX+oQbP2/LyM/To7BmkJhjhY",
-      "hashing_algorithm": "rabbit_password_hashing_sha256",
-      "tags": ["administrator"],
-      "limits": {}
-    }
-  ],
-  "vhosts": [
-    {
-      "name": "dab",
-      "description": "Do as Beginner",
-      "tags": [],
-      "default_queue_type": "quorum",
-      "metadata": {}
-    }
-  ],
-  "permissions": [
-    {
-      "user": "dab",
+      "name": "dab.tasks.urgent",
       "vhost": "dab",
-      "configure": ".*",
-      "write": ".*",
-      "read": ".*"
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-delivery-limit": 5,
+        "x-dead-letter-exchange": "dab.tasks.dlx",
+        "x-dead-letter-routing-key": "dead"
+      }
+    },
+    {
+      "name": "dab.tasks.high",
+      "vhost": "dab",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-delivery-limit": 5,
+        "x-dead-letter-exchange": "dab.tasks.dlx",
+        "x-dead-letter-routing-key": "dead"
+      }
+    },
+    {
+      "name": "dab.tasks.default",
+      "vhost": "dab",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-delivery-limit": 5,
+        "x-dead-letter-exchange": "dab.tasks.dlx",
+        "x-dead-letter-routing-key": "dead"
+      }
+    },
+    {
+      "name": "dab.tasks.low",
+      "vhost": "dab",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-delivery-limit": 5,
+        "x-dead-letter-exchange": "dab.tasks.dlx",
+        "x-dead-letter-routing-key": "dead"
+      }
+    },
+    {
+      "name": "dab.tasks.internal",
+      "vhost": "dab",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum"
+      }
+    },
+    {
+      "name": "dab.tasks.dlq",
+      "vhost": "dab",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum"
+      }
     }
   ],
   "exchanges": [
@@ -46,36 +87,45 @@
       "arguments": {}
     }
   ],
-  "queues": [
-    {
-      "name": "dab.tasks",
-      "vhost": "dab",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {
-        "x-queue-type": "quorum",
-        "x-delivery-limit": 5,
-        "x-dead-letter-exchange": "dab.tasks.dlx",
-        "x-dead-letter-routing-key": "dead"
-      }
-    },
-    {
-      "name": "dab.tasks.dlq",
-      "vhost": "dab",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {
-        "x-queue-type": "quorum"
-      }
-    }
-  ],
   "bindings": [
     {
       "source": "dab.tasks.exchange",
       "vhost": "dab",
-      "destination": "dab.tasks",
+      "destination": "dab.tasks.urgent",
       "destination_type": "queue",
-      "routing_key": "tasks",
+      "routing_key": "dab.tasks.urgent",
+      "arguments": {}
+    },
+    {
+      "source": "dab.tasks.exchange",
+      "vhost": "dab",
+      "destination": "dab.tasks.high",
+      "destination_type": "queue",
+      "routing_key": "dab.tasks.high",
+      "arguments": {}
+    },
+    {
+      "source": "dab.tasks.exchange",
+      "vhost": "dab",
+      "destination": "dab.tasks.default",
+      "destination_type": "queue",
+      "routing_key": "dab.tasks.default",
+      "arguments": {}
+    },
+    {
+      "source": "dab.tasks.exchange",
+      "vhost": "dab",
+      "destination": "dab.tasks.low",
+      "destination_type": "queue",
+      "routing_key": "dab.tasks.low",
+      "arguments": {}
+    },
+    {
+      "source": "dab.tasks.exchange",
+      "vhost": "dab",
+      "destination": "dab.tasks.internal",
+      "destination_type": "queue",
+      "routing_key": "dab.tasks.internal",
       "arguments": {}
     },
     {

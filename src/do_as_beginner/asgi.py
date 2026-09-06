@@ -4,7 +4,6 @@
 import os
 import sys
 
-from celery import Celery
 from django.apps import apps
 from django.conf import settings
 from django.core.handlers.asgi import ASGIHandler
@@ -30,7 +29,6 @@ def set_environment() -> None:
 
 
 def create_application() -> ASGIHandler:
-
     # Set environment variables
     set_environment()
 
@@ -51,7 +49,6 @@ def create_application() -> ASGIHandler:
 
 
 def celery_entrypoint() -> None:
-
     # Set environment variables
     set_environment()
 
@@ -63,11 +60,20 @@ def celery_entrypoint() -> None:
 
         django.setup()
 
-    cl = Celery(APP_NAME)
-    cl.config_from_object("django.conf:settings", namespace="CELERY")
+    # Import lazily: Django apps are ready. ``celery_app()`` is the process-wide
+    # singleton also used by TaskHandler.dispatch, so worker and producer share
+    # one configured app instead of building a fresh instance each.
+    from .tasks.decorators import celery_app  # noqa: PLC0415
+
+    cl = celery_app()
     cl.autodiscover_tasks()
 
-    cl.start(argv=sys.argv[1:])
+    from .tasks.scheduler import Scheduler  # noqa: PLC0415
+
+    argv = Scheduler.apply_worker_concurrency(list(sys.argv[1:]), AppConfig.load().celery)
+    Scheduler().bootstrap(cl)
+
+    cl.start(argv=argv)
 
 
 def entrypoint() -> None:

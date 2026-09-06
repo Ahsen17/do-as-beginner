@@ -8,6 +8,7 @@ from typer import Typer
 
 from do_as_beginner.base import AppConfig, BaseStruct
 from do_as_beginner.base.config.constants import APP_NAME, BASE_DIR
+from do_as_beginner.tasks.enums import QueueTier, queue_name
 
 from .plugins import OtelPlugin, RedisPlugin
 
@@ -69,6 +70,7 @@ class PluginCore(BaseStruct):
                 "django.contrib.staticfiles",
                 "django_async_backend",
                 "django_structlog",
+                "do_as_beginner.tasks",
             ]
         )
 
@@ -149,7 +151,6 @@ class PluginCore(BaseStruct):
         )
 
     def setup_loggings(self) -> None:
-
         log_dir = BASE_DIR / "logs"
         log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -186,26 +187,28 @@ class PluginCore(BaseStruct):
         }
 
     def setup_celery(self, settings: LazySettings) -> None:
+        cfg = self.config.celery
+        cfg.validate_redelivery()
 
-        settings.CELERY_BROKER_URL = self.config.celery.broker_dsn
+        settings.CELERY_BROKER_URL = cfg.broker_dsn
         settings.CELERY_BROKER_TRANSPORT_OPTIONS = {"confirm_publish": True}
-        # No Celery result backend for now: with IGNORE_RESULT, Celery itself persists nothing.
-        # Persisting task results/states to self-managed app tables is a planned feature and is
-        # NOT wired up yet -- until then failures are only observable via logs and the DLQ.
+        # No Celery result backend: with IGNORE_RESULT Celery itself persists nothing. Task
+        # results/states are written by this framework to the dab_tasks app tables
+        # (TaskTrace / DelayedRedelivery) via the lifecycle signals and dispatch hooks.
         settings.CELERY_TASK_IGNORE_RESULT = True
         settings.CELERY_STORE_ERROR_EVEN_IF_IGNORED = False
         settings.CELERY_TASK_SERIALIZER = "json"
         settings.CELERY_ACCEPT_CONTENT = ["json"]
-        settings.CELERY_TIMEZONE = "Asia/Shanghai"
+        settings.CELERY_TIMEZONE = cfg.timezone
         settings.CELERY_ENABLE_UTC = True
         settings.CELERY_TASK_ACKS_LATE = True
         settings.CELERY_TASK_REJECT_ON_WORKER_LOST = True
         # acks_on_failure_or_timeout=False + acks_late: an unhandled failure is not acked, the
-        # broker redelivers it, and after the quorum x-delivery-limit (5) it is dead-lettered to
-        # dab.tasks.dlq instead of being silently dropped. Task code should catch domain errors
-        # itself and let only unexpected errors surface.
+        # broker redelivers it, and after the quorum x-delivery-limit (<delivery_limit>) it is
+        # dead-lettered to <prefix>.dlq instead of being silently dropped. Task code should catch
+        # domain errors itself and let only unexpected errors surface.
         # NOTE: autoretry() re-publishes a fresh message that resets the broker delivery budget,
-        # so the effective execution bound is (1 + autoretry) per broker delivery, not a flat 5.
+        # so the effective execution bound is (1 + autoretry) per broker delivery, not flat.
         # The exact interplay is to be verified by integration tests.
         settings.CELERY_TASK_ACKS_ON_FAILURE_OR_TIMEOUT = False
         settings.CELERY_WORKER_PREFETCH_MULTIPLIER = 1
@@ -214,37 +217,63 @@ class PluginCore(BaseStruct):
         settings.CELERY_TASK_SOFT_TIME_LIMIT = 240
         settings.CELERY_TASK_TIME_LIMIT = 300
 
-        task_exchange = Exchange(name="dab.tasks.exchange", type="direct", durable=True)
-        dead_letter_exchange = Exchange("dab.tasks.dlx", type="direct", durable=True)
+        prefix = cfg.queue_prefix
+        task_exchange = Exchange(f"{prefix}.exchange", type="direct", durable=True)
+        dead_letter_exchange = Exchange(f"{prefix}.dlx", type="direct", durable=True)
 
-        settings.CELERY_TASK_QUEUES = (
+        tier_args = {
+            "x-queue-type": "quorum",
+            "x-delivery-limit": cfg.delivery_limit,
+            "x-dead-letter-exchange": dead_letter_exchange.name,
+            "x-dead-letter-routing-key": "dead",
+        }
+        # One quorum queue per tier; each tier has its own dedicated workers so a high-priority
+        # flood cannot starve lower tiers (fairness floor = worker quota, not scheduling).
+        tier_queues = tuple(
             Queue(
-                name="dab.tasks",
+                name=queue_name(prefix, tier),
                 exchange=task_exchange,
-                routing_key="tasks",
+                routing_key=queue_name(prefix, tier),
                 durable=True,
-                queue_arguments={
-                    "x-queue-type": "quorum",
-                    "x-delivery-limit": 5,
-                    "x-dead-letter-exchange": dead_letter_exchange.name,
-                    "x-dead-letter-routing-key": "dead",
-                },
-            ),
-            Queue(
-                name="dab.tasks.dlq",
-                exchange=dead_letter_exchange,
-                routing_key="dead",
-                durable=True,
-                queue_arguments={"x-queue-type": "quorum"},
-            ),
+                queue_arguments=tier_args,
+            )
+            for tier in QueueTier
         )
-        settings.CELERY_TASK_DEFAULT_QUEUE = "dab.tasks"
-        settings.CELERY_TASK_DEFAULT_EXCHANGE = "dab.tasks.exchange"
+        # Internal system queue: periodic system tasks (DLQ drain, due-redelivery dispatch) run
+        # in a dedicated worker bound to it. Kept separate from user tiers.
+        internal_queue = Queue(
+            name=f"{prefix}.internal",
+            exchange=task_exchange,
+            routing_key=f"{prefix}.internal",
+            durable=True,
+            queue_arguments={"x-queue-type": "quorum"},
+        )
+        dead_letter_queue = Queue(
+            name=f"{prefix}.dlq",
+            exchange=dead_letter_exchange,
+            routing_key="dead",
+            durable=True,
+            queue_arguments={"x-queue-type": "quorum"},
+        )
+
+        settings.CELERY_TASK_QUEUES = (*tier_queues, internal_queue, dead_letter_queue)
+        settings.CELERY_TASK_DEFAULT_QUEUE = queue_name(prefix, QueueTier.DEFAULT)
+        settings.CELERY_TASK_DEFAULT_EXCHANGE = task_exchange.name
         settings.CELERY_TASK_DEFAULT_EXCHANGE_TYPE = "direct"
-        settings.CELERY_TASK_DEFAULT_ROUTING_KEY = "tasks"
+        settings.CELERY_TASK_DEFAULT_ROUTING_KEY = queue_name(prefix, QueueTier.DEFAULT)
         settings.CELERY_TASK_CREATE_MISSING_QUEUES = False
+        # Discover each installed app's ``<app>.tasks`` module so celery imports and registers
+        # consumer tasks on startup. The default autodiscover_tasks() does not scan
+        # INSTALLED_APPS reliably, so CELERY_IMPORTS is the source of truth.
+        import importlib.util  # noqa: PLC0415
+
+        task_modules = tuple(
+            f"{app}.tasks" for app in self.installed_apps if importlib.util.find_spec(f"{app}.tasks") is not None
+        )
+        settings.CELERY_IMPORTS = task_modules
+        # CELERY_BEAT_SCHEDULE is assembled in the celery entrypoint after task import
+        # (so code-declared @periodic_task entries are visible) -- see asgi.celery_entrypoint.
 
     def setup_plugins(self) -> None:
-
         OtelPlugin(self.config).setup()
         RedisPlugin(self.config).setup()
