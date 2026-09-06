@@ -26,6 +26,7 @@ dependencies = [
   "psycopg[binary,pool]",
   "pydantic",
   "pytoml",
+  "qdrant-client",
   "redis[hiredis]",
   "structlog",
   "typer",

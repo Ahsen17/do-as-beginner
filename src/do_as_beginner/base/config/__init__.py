@@ -1,7 +1,7 @@
 from .cache import RedisConfig
 from .celery import CeleryConfig
 from .core import AppConfig
-from .database import PostgresConfig
+from .database import PostgresConfig, QdrantConfig
 from .otel import OtelConfig
 from .server import ServerConfig
 
@@ -10,6 +10,7 @@ __all__ = (
     "CeleryConfig",
     "OtelConfig",
     "PostgresConfig",
+    "QdrantConfig",
     "RedisConfig",
     "ServerConfig",
 )

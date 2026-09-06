@@ -7,7 +7,7 @@ from do_as_beginner.base.schemas import BaseStruct
 from .cache import RedisConfig
 from .celery import CeleryConfig
 from .constants import BASE_DIR
-from .database import PostgresConfig
+from .database import PostgresConfig, QdrantConfig
 from .otel import OtelConfig
 from .server import ServerConfig
 
@@ -20,10 +20,13 @@ class AppConfig(BaseStruct):
     _instance: ClassVar[Self | None] = None
 
     server: ServerConfig = Field(default_factory=ServerConfig)
-    postgres: PostgresConfig = Field(default_factory=PostgresConfig)
-    otel: OtelConfig = Field(default_factory=OtelConfig)
+
     redis: RedisConfig = Field(default_factory=RedisConfig)
+    postgres: PostgresConfig = Field(default_factory=PostgresConfig)
+    qdrant: QdrantConfig = Field(default_factory=QdrantConfig)
+
     celery: CeleryConfig = Field(default_factory=CeleryConfig)
+    otel: OtelConfig = Field(default_factory=OtelConfig)
 
     @classmethod
     def load(cls, filename: str = "config.yaml") -> Self:
