@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterable
+from collections.abc import AsyncGenerator
 from functools import cached_property
 
 from openai import AsyncOpenAI
@@ -24,7 +24,7 @@ class OpenAIEmbedder(EmbedderProtocol):
             api_key=self._options.api_key,
         )
 
-    async def embed(self, *document: str, dimensions: int = 2056) -> AsyncIterable[Embedding]:
+    async def embed(self, *document: str, dimensions: int = 2056) -> AsyncGenerator[Embedding]:
 
         for embedding in (
             await self.client.embeddings.create(
