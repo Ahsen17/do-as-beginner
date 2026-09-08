@@ -275,8 +275,14 @@ class PluginCore(BaseStruct):
         # CELERY_BEAT_SCHEDULE is assembled in the celery entrypoint after task import
         # (so code-declared @periodic_task entries are visible) -- see asgi.celery_entrypoint.
 
-    def setup_plugins(self) -> None:
+        task_modules = tuple(
+            f"{app}.tasks" for app in self.installed_apps if importlib.util.find_spec(f"{app}.tasks") is not None
+        )
+        settings.CELERY_IMPORTS = task_modules
+        # CELERY_BEAT_SCHEDULE is assembled in the celery entrypoint after task import
+        # (so code-declared @periodic_task entries are visible) -- see asgi.celery_entrypoint.
 
+    def setup_plugins(self) -> None:
         OtelPlugin(self.config).setup()
 
         # plugins di injection
