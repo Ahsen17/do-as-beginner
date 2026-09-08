@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterable
 from functools import cached_property
 
 from openai import AsyncOpenAI
@@ -23,18 +24,16 @@ class OpenAIEmbedder(EmbedderProtocol):
             api_key=self._options.api_key,
         )
 
-    async def embed(self, *document: str, dimensions: int = 2056) -> list[Embedding]:
+    async def embed(self, *document: str, dimensions: int = 2056) -> AsyncIterable[Embedding]:
 
-        return [
-            Embedding(
+        for embedding in (
+            await self.client.embeddings.create(
+                input=(*document,),
+                model=self._options.model_id,
+                dimensions=dimensions,
+            )
+        ).data:
+            yield Embedding(
                 embedding=embedding.embedding,
                 index=embedding.index,
             )
-            for embedding in (
-                await self.client.embeddings.create(
-                    input=(*document,),
-                    model=self._options.model_id,
-                    dimensions=dimensions,
-                )
-            ).data
-        ]

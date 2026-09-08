@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterable
 from typing import Protocol
 
 from .schemas import Embedding
@@ -10,4 +11,4 @@ class EmbedderProtocol(Protocol):
         self,
         *document: str,
         dimensions: int = 2056,
-    ) -> list[Embedding]: ...
+    ) -> AsyncIterable[Embedding]: ...

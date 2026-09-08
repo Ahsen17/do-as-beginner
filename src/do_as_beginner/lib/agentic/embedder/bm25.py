@@ -204,7 +204,7 @@ class Bm25:
             parallel=parallel,
         )
 
-    def query_embed(self, query: str | Iterable[str], **kwargs: Any) -> Iterable[SparseEmbedding]:
+    def query_embed(self, query: str | Iterable[str]) -> Iterable[SparseEmbedding]:
 
         if isinstance(query, str):
             query = [query]
