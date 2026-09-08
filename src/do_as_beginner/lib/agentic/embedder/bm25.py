@@ -2,8 +2,7 @@ import os
 import re
 import unicodedata
 from collections import defaultdict
-from collections.abc import Callable, Iterable
-from itertools import islice
+from collections.abc import Iterable
 from multiprocessing import get_all_start_methods
 from pathlib import Path
 from typing import Any, ClassVar, Self
@@ -13,35 +12,18 @@ import mmh3
 import numpy as np
 from fastembed.parallel_processor import ParallelWorkerPool, Worker
 
-from do_as_beginner.base import BaseStruct
-from do_as_beginner.base.config.constants import BASE_DIR
+from .schemas import SparseEmbedding
+from .utils import iter_batch
 
-__all__ = (
-    "Bm25ZH",
-    "SparseEmbedding",
-)
+__all__ = ("Bm25",)
 
 
-class SparseEmbedding(BaseStruct):
-    """Sparse embedding for text embeddings"""
-
-    values: list[float]
-    indices: list[int]
-
-
-class Bm25ZH:
+class Bm25:
     """Bm25 sparse embedder for zhCN text using jieba tokenization"""
 
     _punctuation: ClassVar[re.Pattern[str]] = re.compile(
         pattern=r"[^\u4e00-\u9fffa-zA-Z0-9\-#]|\s+",
     )
-    _rm_non_alphanumeric: ClassVar[re.Pattern[str]] = re.compile(
-        pattern=r"[^\w\s]",
-        flags=re.UNICODE,
-    )
-    _stopwords_files: ClassVar[list[Path]] = [
-        BASE_DIR.joinpath("assets/stopwords.txt"),
-    ]
 
     def __init__(
         self,
@@ -50,15 +32,26 @@ class Bm25ZH:
         b: float = 0.75,
         avg_len: float = 256.0,
         token_max_length: int = 40,
-        tokenizer: Callable[..., list[str]] | None = None,
+        stopwords_files: Iterable[Path] | None = None,
     ) -> None:
 
         self._k = k
         self._b = b
         self._avg_len = avg_len
         self._token_max_length = token_max_length
-        self._tokenizer = tokenizer or self.tokenizer
-        self._stopwords = self._load_stopwords()
+        self._stopwords_files = stopwords_files
+        self._tokenizer = self.tokenizer
+
+        if self._avg_len <= 0:
+            raise ValueError("avg_len must be greater than 0")
+        if self._token_max_length <= 0:
+            raise ValueError("token_max_length must be greater than 0")
+        if self._k < 0:
+            raise ValueError("k must be greater than or equal to 0")
+        if self._b < 0 or self._b > 1:
+            raise ValueError("b must be between 0 and 1")
+
+        self._stopwords = self._load_stopwords(stopwords_files)
 
     @classmethod
     def tokenizer(cls, document: str) -> list[str]:
@@ -73,25 +66,32 @@ class Bm25ZH:
         )
 
     @classmethod
-    def _load_stopwords(cls) -> set[str]:
-
-        _lines: list[str] = []
-
-        for file in cls._stopwords_files:
-            if not file.exists():
-                continue
-
-            _lines.extend(line.strip() for line in file if line.strip())
-
-        return set(_lines)
-
-    @classmethod
     def compute_token_id(cls, token: str) -> int:
         return abs(mmh3.hash(token))
 
+    @classmethod
+    def _load_stopwords(
+        cls,
+        stopwords_files: Iterable[Path] | None = None,
+    ) -> set[str]:
+
+        stopwords: set[str] = set()
+        if stopwords_files is None:
+            return stopwords
+
+        for file in stopwords_files:
+            if not file.exists():
+                continue
+
+            for line in file.read_text().splitlines():
+                if _line := line.strip():
+                    stopwords.add(_line)
+
+        return stopwords
+
     def _embed_documents(
         self,
-        documents: str | list[str],
+        documents: str | Iterable[str],
         batch_size: int = 256,
         parallel: int | None = None,
     ) -> Iterable[SparseEmbedding]:
@@ -128,6 +128,8 @@ class Bm25ZH:
                 b=self._b,
                 avg_len=self._avg_len,
                 token_max_length=self._token_max_length,
+                stopwords_files=self._stopwords_files,
+                tokenizer=self._tokenizer,
             ):
                 yield from batch
 
@@ -144,7 +146,7 @@ class Bm25ZH:
             if len(token) > self._token_max_length:
                 continue
 
-            stemmed_tokens.append(token)
+            stemmed_tokens.append(token.lower())
 
         return stemmed_tokens
 
@@ -177,7 +179,6 @@ class Bm25ZH:
         embeddings: list[SparseEmbedding] = []
 
         for document in documents:
-            document = self._rm_non_alphanumeric.sub(" ", document)
             tokens = self._tokenizer(document)
             stemmed_tokens = self._stem(tokens)
             token_id2value = self._term_frequency(stemmed_tokens)
@@ -212,28 +213,28 @@ class Bm25ZH:
             tokens = self._tokenizer(text)
             stemmed_tokens = self._stem(tokens)
             indices = np.array(
-                list({self.compute_token_id(token) for token in stemmed_tokens}),
+                [self.compute_token_id(token) for token in stemmed_tokens],
                 dtype=np.int32,
             )
             values = np.ones_like(indices)
 
             yield SparseEmbedding(
-                indices=indices.tolist(),
+                indices=sorted(indices.tolist()),
                 values=values.tolist(),
             )
 
     @classmethod
     def _get_worker_class(cls) -> type[Worker]:
 
-        return Bm25ZHWorker
+        return _Bm25Worker
 
 
-class Bm25ZHWorker(Worker):
-    """Worker class for Bm25ZH embedding"""
+class _Bm25Worker(Worker):
+    """Worker class for Bm25 embedding"""
 
     def __init__(self, **kwargs: Any) -> None:
 
-        self.model = Bm25ZH(**kwargs)
+        self.model = Bm25(**kwargs)
 
     @classmethod
     def start(cls, **kwargs: Any) -> Self:
@@ -247,13 +248,3 @@ class Bm25ZHWorker(Worker):
 
         for idx, batch in items:
             yield idx, self.model.raw_embed(batch)
-
-
-def iter_batch[T](iterable: Iterable[T], size: int) -> Iterable[list[T]]:
-
-    source_iter = iter(iterable)
-    while source_iter:
-        b = list(islice(source_iter, size))
-        if len(b) == 0:
-            break
-        yield b

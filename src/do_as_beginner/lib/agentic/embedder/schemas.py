@@ -3,7 +3,15 @@ from do_as_beginner.base import BaseStruct
 __all__ = (
     "Embedding",
     "OpenAIEmbedderOptions",
+    "SparseEmbedding",
 )
+
+
+class SparseEmbedding(BaseStruct):
+    """Sparse embedding schema"""
+
+    values: list[float]
+    indices: list[int]
 
 
 class Embedding(BaseStruct):
