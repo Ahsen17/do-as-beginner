@@ -21,7 +21,7 @@ def _clean_tables() -> Iterator[None]:
     yield
 
 
-def test_dispatch_passes_through_send_opts(monkeypatch) -> None:
+def test_dispatch_passes_through_send_opts(monkeypatch) -> None:  # type: ignore
     """``dispatch`` forwards send_task options and records the enqueued row."""
 
     sent: dict[str, Any] = {}

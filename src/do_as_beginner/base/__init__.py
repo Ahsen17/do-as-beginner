@@ -3,6 +3,7 @@ from .config import (
     CeleryConfig,
     OtelConfig,
     PostgresConfig,
+    QdrantConfig,
     RedisConfig,
     ServerConfig,
 )
@@ -14,6 +15,7 @@ __all__ = (
     "CeleryConfig",
     "OtelConfig",
     "PostgresConfig",
+    "QdrantConfig",
     "RedisConfig",
     "ServerConfig",
 )

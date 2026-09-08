@@ -5,6 +5,6 @@ __all__ = ("PluginProtocol",)
 
 
 class PluginProtocol:
-    """Protocol for server plugins."""
+    """Protocol for server plugins"""
 
     def setup(self) -> None: ...

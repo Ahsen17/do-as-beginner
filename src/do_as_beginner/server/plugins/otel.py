@@ -48,7 +48,6 @@ class OtelPlugin(PluginProtocol):
         )
 
     def setup(self) -> None:
-
         if not self._config.otel.enabled:
             return
 

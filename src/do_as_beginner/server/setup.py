@@ -1,3 +1,4 @@
+import importlib.util
 from typing import Any, ClassVar
 
 import structlog
@@ -10,7 +11,8 @@ from do_as_beginner.base import AppConfig, BaseStruct
 from do_as_beginner.base.config.constants import APP_NAME, BASE_DIR
 from do_as_beginner.tasks.enums import QueueTier, queue_name
 
-from .plugins import OtelPlugin, RedisPlugin
+from .di import get_default_container
+from .plugins import OtelPlugin, QdrantPlugin, RedisPlugin
 
 __all__ = ("PluginCore",)
 
@@ -265,7 +267,14 @@ class PluginCore(BaseStruct):
         # Discover each installed app's ``<app>.tasks`` module so celery imports and registers
         # consumer tasks on startup. The default autodiscover_tasks() does not scan
         # INSTALLED_APPS reliably, so CELERY_IMPORTS is the source of truth.
-        import importlib.util  # noqa: PLC0415
+        from importlib import util  # noqa: PLC0415
+
+        task_modules = tuple(
+            f"{app}.tasks" for app in self.installed_apps if util.find_spec(f"{app}.tasks") is not None
+        )
+        settings.CELERY_IMPORTS = task_modules
+        # CELERY_BEAT_SCHEDULE is assembled in the celery entrypoint after task import
+        # (so code-declared @periodic_task entries are visible) -- see asgi.celery_entrypoint.
 
         task_modules = tuple(
             f"{app}.tasks" for app in self.installed_apps if importlib.util.find_spec(f"{app}.tasks") is not None
@@ -276,4 +285,12 @@ class PluginCore(BaseStruct):
 
     def setup_plugins(self) -> None:
         OtelPlugin(self.config).setup()
-        RedisPlugin(self.config).setup()
+
+        # plugins di injection
+        container = get_default_container()
+
+        for plugin in (
+            RedisPlugin(self.config, container),
+            QdrantPlugin(self.config, container),
+        ):
+            plugin.setup(**container.inject(plugin.setup))

@@ -8,10 +8,18 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+  "autogen-agentchat",
+  "autogen-core",
+  "autogen-ext[openai]",
   "celery",
   "django",
   "django-async-backend",
   "django-structlog",
+  "fastembed",
+  "jieba",
+  "langchain",
+  "langchain-text-splitters",
+  "langgraph",
   "opentelemetry-api",
   "opentelemetry-exporter-otlp",
   "opentelemetry-instrumentation",
@@ -21,6 +29,7 @@ dependencies = [
   "psycopg[binary,pool]",
   "pydantic",
   "pytoml",
+  "qdrant-client",
   "redis[hiredis]",
   "structlog",
   "typer",

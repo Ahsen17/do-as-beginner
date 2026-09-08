@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from do_as_beginner.shared import RedisFactory
+from qdrant_client import AsyncQdrantClient
 
 from .protocol import PluginProtocol
 
@@ -9,8 +9,8 @@ if TYPE_CHECKING:
     from do_as_beginner.server import DIContainer
 
 
-class RedisPlugin(PluginProtocol):
-    """Server plugin for async redis"""
+class QdrantPlugin(PluginProtocol):
+    """Server plugin for qdrant"""
 
     def __init__(self, config: "AppConfig", container: "DIContainer") -> None:
 
@@ -20,6 +20,10 @@ class RedisPlugin(PluginProtocol):
     def setup(self) -> None:
 
         self._container.register(
-            RedisFactory(self._config.redis),
-            key="redis_factory",
+            AsyncQdrantClient(
+                **self._config.qdrant.to_dict(
+                    exclude_unset=True,
+                )
+            ),
+            key="qdrant_client",
         )
