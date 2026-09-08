@@ -1,3 +1,4 @@
+import importlib.util
 from typing import Any, ClassVar
 
 import structlog
