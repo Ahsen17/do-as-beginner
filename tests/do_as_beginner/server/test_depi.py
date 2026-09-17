@@ -1,19 +1,18 @@
-"""Unit tests for the lightweight DI container (``server.di``)."""
+"""Unit tests for the lightweight DI container (``server.depi``)."""
 
 from typing import Annotated
 
 import pytest
 
-from do_as_beginner.server.di import (
+from do_as_beginner.server.depi import (
+    DI,
     AmbiguousDependencyError,
     AsyncDependencyError,
     CircularDependencyError,
+    Container,
     DependencyNotFoundError,
-    DIContainer,
     DuplicateDependencyError,
     NamedDependency,
-    get_default_container,
-    set_default_container,
 )
 
 
@@ -32,7 +31,7 @@ class _Svc:
 
 
 def test_register_value_supports_key_and_type_lookup() -> None:
-    container = DIContainer()
+    container = Container()
     redis = _Redis()
     container.register(redis, key="redis_a")
 
@@ -41,7 +40,7 @@ def test_register_value_supports_key_and_type_lookup() -> None:
 
 
 def test_register_duplicate_key_raises() -> None:
-    container = DIContainer()
+    container = Container()
     container.register(_Redis(), key="redis")
 
     with pytest.raises(DuplicateDependencyError):
@@ -49,7 +48,7 @@ def test_register_duplicate_key_raises() -> None:
 
 
 def test_register_class_resolves_constructor_from_container() -> None:
-    container = DIContainer()
+    container = Container()
     db = _Db()
     container.register(db, key="db")
     container.register(_Svc)
@@ -58,7 +57,7 @@ def test_register_class_resolves_constructor_from_container() -> None:
 
 
 def test_register_factory_uses_return_annotation_as_type() -> None:
-    container = DIContainer()
+    container = Container()
 
     def build_db() -> _Db:
         return _Db(name="built")
@@ -70,7 +69,7 @@ def test_register_factory_uses_return_annotation_as_type() -> None:
 
 
 def test_singleton_semantics_return_same_instance() -> None:
-    container = DIContainer()
+    container = Container()
     container.register(_Db(), key="db")
     container.register(_Svc)
 
@@ -78,7 +77,7 @@ def test_singleton_semantics_return_same_instance() -> None:
 
 
 def test_ambiguous_type_requires_alias() -> None:
-    container = DIContainer()
+    container = Container()
     first = _Redis()
     second = _Redis()
     container.register(first, key="redis_a")
@@ -92,20 +91,20 @@ def test_ambiguous_type_requires_alias() -> None:
 
 
 def test_alias_marker_disambiguates_consumer_params() -> None:
-    container = DIContainer()
+    container = Container()
     first = _Redis()
     second = _Redis()
     container.register(first, key="redis_a")
     container.register(second, key="redis_b")
 
-    def consume(redis: Annotated[_Redis, NamedDependency("redis_a")]) -> _Redis:
+    def consume(redis: Annotated[_Redis, NamedDependency(key="redis_a")]) -> _Redis:
         return redis
 
     assert container.inject(consume) == {"redis": first}
 
 
 def test_implicit_type_first_consumer_injection() -> None:
-    container = DIContainer()
+    container = Container()
     db = _Db()
     container.register(db, key="db")
 
@@ -117,14 +116,14 @@ def test_implicit_type_first_consumer_injection() -> None:
 
 
 def test_unregistered_key_raises() -> None:
-    container = DIContainer()
+    container = Container()
 
     with pytest.raises(DependencyNotFoundError):
         container.get("nope")
 
 
 def test_nested_dependency_resolves_in_topological_order() -> None:
-    container = DIContainer()
+    container = Container()
     order: list[str] = []
 
     def build_db() -> _Db:
@@ -144,12 +143,12 @@ def test_nested_dependency_resolves_in_topological_order() -> None:
 
 
 def test_circular_dependency_raises() -> None:
-    container = DIContainer()
+    container = Container()
 
-    def a(b: Annotated[_Redis, NamedDependency("b")]) -> _Db:
+    def a(b: Annotated[_Redis, NamedDependency(key="b")]) -> _Db:
         return _Db()
 
-    def b(a: Annotated[_Db, NamedDependency("a")]) -> _Redis:
+    def b(a: Annotated[_Db, NamedDependency(key="a")]) -> _Redis:
         return _Redis()
 
     container.register(a, key="a")
@@ -160,7 +159,7 @@ def test_circular_dependency_raises() -> None:
 
 
 async def test_async_provider_resolves_via_aget() -> None:
-    container = DIContainer()
+    container = Container()
 
     async def build_redis() -> _Redis:
         return _Redis()
@@ -171,7 +170,7 @@ async def test_async_provider_resolves_via_aget() -> None:
 
 
 def test_sync_get_on_async_provider_raises() -> None:
-    container = DIContainer()
+    container = Container()
 
     async def build_redis() -> _Redis:
         return _Redis()
@@ -183,7 +182,7 @@ def test_sync_get_on_async_provider_raises() -> None:
 
 
 async def test_sync_get_returns_cached_async_value() -> None:
-    container = DIContainer()
+    container = Container()
 
     async def build_redis() -> _Redis:
         return _Redis()
@@ -195,7 +194,7 @@ async def test_sync_get_returns_cached_async_value() -> None:
 
 
 async def test_ainject_resolves_async_and_sync_dependencies() -> None:
-    container = DIContainer()
+    container = Container()
     db = _Db()
     container.register(db, key="db")
 
@@ -213,15 +212,13 @@ async def test_ainject_resolves_async_and_sync_dependencies() -> None:
 
 
 def test_default_container_is_process_wide_singleton() -> None:
-    first = get_default_container()
-    second = get_default_container()
+    first = DI.get_default_container()
+    second = DI.get_default_container()
     assert first is second
 
 
-def test_set_default_container_overrides() -> None:
-    fresh = DIContainer()
-    set_default_container(fresh)
-    try:
-        assert get_default_container() is fresh
-    finally:
-        set_default_container(DIContainer())  # restore for other tests
+def test_set_default_container_overrides(default_container: Container) -> None:
+    override = Container()
+    DI.set_default_container(override)
+
+    assert DI.get_default_container() is override
