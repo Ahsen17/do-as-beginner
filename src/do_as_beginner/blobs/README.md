@@ -40,10 +40,10 @@ async def handler(
 ### 存取（去重幂等）
 
 ```python
-info = await blobs.put(content)          # key = sha256(content)；同内容只存一行
-data = await blobs.get(info.key)         # 全量读取；可加 max_size= 读守卫
-meta = await blobs.info(info.key)        # 元数据（不加载内容）
-await blobs.exists(info.key)             # -> bool（永不抛领域异常）
+info = await blobs.put(content)  # key = sha256(content)；同内容只存一行
+data = await blobs.get(info.key)  # 全量读取；可加 max_size= 读守卫
+meta = await blobs.info(info.key)  # 元数据（不加载内容）
+await blobs.exists(info.key)  # -> bool（永不抛领域异常）
 ```
 
 ### 与业务对象关联（引用 + 引用计数）
@@ -63,9 +63,9 @@ reference = await blobs.attach(info.key, obj=my_model_instance, field="attachmen
 ### 删除（唯一入口是引用）
 
 ```python
-await blobs.release(reference)            # 引用行删除 + 计数 −1；计数归零时同事务删除 blob 行
-await blobs.purge_references(obj)         # 删除某业务对象的全部引用（业务对象删除时必须调用）
-await blobs.discard(key)                  # 仅删除无引用的孤儿 blob；仍有引用时返回 False 不动作
+await blobs.release(reference)  # 引用行删除 + 计数 −1；计数归零时同事务删除 blob 行
+await blobs.purge_references(obj)  # 删除某业务对象的全部引用（业务对象删除时必须调用）
+await blobs.discard(key)  # 仅删除无引用的孤儿 blob；仍有引用时返回 False 不动作
 ```
 
 > 门面**不提供**按 key 无条件删除 —— 内容被多对象共享时，直接删行会破坏其他引用方。
@@ -83,11 +83,9 @@ from do_as_beginner.blobs.async_orm import async_manager
 
 async with async_atomic():
     my_record = await MyModel.async_objects.acreate(...)
-    blob = await Blob.acreate_from_content(content)          # 去重感知：命中即复用
-    ctype = await async_manager(ContentType).aget(
-        app_label=MyModel._meta.app_label, model=MyModel._meta.model_name
-    )
-    await BlobReference.acreate_tracked(                     # 建引用 + 同事务计数 +1
+    blob = await Blob.acreate_from_content(content)  # 去重感知：命中即复用
+    ctype = await async_manager(ContentType).aget(app_label=MyModel._meta.app_label, model=MyModel._meta.model_name)
+    await BlobReference.acreate_tracked(  # 建引用 + 同事务计数 +1
         blob=blob,
         content_type=ctype,
         object_id=my_record.pk,
