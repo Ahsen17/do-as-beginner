@@ -40,7 +40,7 @@ class Container:
 
     def __init__(self) -> None:
         self._registrations: dict[str, Registration] = {}
-        self._type_index: dict[str, list[str]] = {}
+        self._type_index: dict[type, list[str]] = {}
         self._params_cache: WeakKeyDictionary[Callable[..., Any], list[ParamSpec]] = WeakKeyDictionary()
 
     def register(self, provider: Any, *, key: str | None = None) -> None:
