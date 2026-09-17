@@ -1,15 +1,13 @@
-from .depi import (
-    DI,
+from .exceptions import (
     AmbiguousDependencyError,
     AsyncDependencyError,
     CircularDependencyError,
-    Container,
     DependencyError,
     DependencyNotFoundError,
     DuplicateDependencyError,
-    NamedDependency,
 )
-from .setup import PluginCore
+from .handlers import DI, Container
+from .schemas import NamedDependency, ParamSpec, Registration
 
 __all__ = (
     "DI",
@@ -21,5 +19,6 @@ __all__ = (
     "DependencyNotFoundError",
     "DuplicateDependencyError",
     "NamedDependency",
-    "PluginCore",
+    "ParamSpec",
+    "Registration",
 )
