@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from django.utils.log import log_response
 
-from do_as_beginner.server.di import get_default_container
+from do_as_beginner.server.depi import DI
 from do_as_beginner.shared import GenericResponse
 
 if TYPE_CHECKING:
@@ -55,7 +55,7 @@ def require_http_methods(request_method_list: list[str]) -> Callable[[T], T]:
                 if request is None or request.method not in request_method_list:
                     return _method_not_allowed(request)
 
-                injected = await get_default_container().ainject(unwrapped)
+                injected = await DI.get_default_container().ainject(unwrapped)
                 return await cast("Callable[..., Any]", unwrapped)(*args, **{**kwargs, **injected})
 
             return cast("T", async_wrapper)
@@ -70,7 +70,7 @@ def require_http_methods(request_method_list: list[str]) -> Callable[[T], T]:
             if request is None or request.method not in request_method_list:
                 return _method_not_allowed(request)
 
-            injected = get_default_container().inject(unwrapped)
+            injected = DI.get_default_container().inject(unwrapped)
             return cast("Callable[..., Any]", unwrapped)(*args, **{**kwargs, **injected})
 
         return cast("T", sync_wrapper)

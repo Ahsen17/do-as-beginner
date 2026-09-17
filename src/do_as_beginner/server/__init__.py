@@ -1,20 +1,22 @@
-from .di import (
+from .depi import (
+    DI,
     AmbiguousDependencyError,
     AsyncDependencyError,
     CircularDependencyError,
+    Container,
     DependencyError,
     DependencyNotFoundError,
-    DIContainer,
     DuplicateDependencyError,
     NamedDependency,
 )
 from .setup import PluginCore
 
 __all__ = (
+    "DI",
     "AmbiguousDependencyError",
     "AsyncDependencyError",
     "CircularDependencyError",
-    "DIContainer",
+    "Container",
     "DependencyError",
     "DependencyNotFoundError",
     "DuplicateDependencyError",

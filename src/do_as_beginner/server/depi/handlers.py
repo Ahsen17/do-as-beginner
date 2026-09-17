@@ -25,7 +25,7 @@ from .schemas import EMPTY, NamedDependency, ParamSpec, Registration
 __all__ = ("DI",)
 
 
-class _Container:
+class Container:
     """Lightweight runtime dependency-injection container.
 
     Registered dependencies resolve once (lazily on first access) and are then
@@ -39,17 +39,11 @@ class _Container:
     )
 
     def __init__(self) -> None:
-
         self._registrations: dict[str, Registration] = {}
         self._type_index: dict[str, list[str]] = {}
         self._params_cache: WeakKeyDictionary[Callable[..., Any], list[ParamSpec]] = WeakKeyDictionary()
 
-    def register(
-        self,
-        provider: Any,
-        *,
-        key: str | None = None,
-    ) -> None:
+    def register(self, provider: Any, *, key: str | None = None) -> None:
         """Register a dependency.
 
         ``provider`` may be:
@@ -97,6 +91,15 @@ class _Container:
                 is_async=inspect.iscoroutinefunction(provider),
             )
 
+        else:
+            registration = Registration(
+                key=dep_key,
+                provider=provider,
+                resolved_type=type(provider),
+                is_async=False,
+                value=provider,
+            )
+
         self._registrations[dep_key] = registration
         if registration.resolved_type is not None:
             self._type_index.setdefault(
@@ -105,7 +108,6 @@ class _Container:
             ).append(dep_key)
 
     def _lookup(self, key_or_type: str | type) -> Registration:
-
         if isinstance(key_or_type, str):
             registration = self._registrations.get(key_or_type)
             if registration is None:
@@ -123,13 +125,11 @@ class _Container:
         return self._registrations[candidates[0]]
 
     def _provider_params(self, registration: Registration) -> list[ParamSpec]:
-
         if registration.params is None:
             registration.params = _introspect_params(registration.provider)
         return registration.params
 
     def _resolve_sync(self, registration: Registration, path: set[str]) -> Any:
-
         if registration.value is not EMPTY:
             return registration.value
         if registration.key in path:
@@ -154,7 +154,6 @@ class _Container:
         return value
 
     async def _resolve_async(self, registration: Registration, path: set[str]) -> Any:
-
         if registration.value is not EMPTY:
             return registration.value
         if registration.key in path:
@@ -328,20 +327,20 @@ def _introspect_params(callable_: Any) -> list[ParamSpec]:
 class DI:
     """Module-level default container holder (avoids mutating a module global)"""
 
-    _instance: ClassVar[_Container | None] = None
+    _instance: ClassVar[Container | None] = None
 
     @classmethod
-    def get_default_container(cls) -> _Container:
+    def get_default_container(cls) -> Container:
         """Return the process-wide default container, creating it on first use."""
 
         instance = cls._instance
         if instance is None:
-            instance = _Container()
+            instance = Container()
             cls._instance = instance
         return instance
 
     @classmethod
-    def set_default_container(cls, container: _Container) -> None:
+    def set_default_container(cls, container: Container) -> None:
         """Replace the process-wide default container (used by tests/overrides)."""
 
         cls._instance = container

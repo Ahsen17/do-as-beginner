@@ -27,7 +27,7 @@ blobs:
 from typing import Annotated
 
 from do_as_beginner.blobs import BlobService, BlobServiceFactory
-from do_as_beginner.server.di import NamedDependency
+from do_as_beginner.server.depi import NamedDependency
 
 
 async def handler(

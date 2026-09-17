@@ -6,7 +6,7 @@ from .exceptions import (
     DependencyNotFoundError,
     DuplicateDependencyError,
 )
-from .handlers import DI
+from .handlers import DI, Container
 from .schemas import NamedDependency, ParamSpec, Registration
 
 __all__ = (
@@ -14,6 +14,7 @@ __all__ = (
     "AmbiguousDependencyError",
     "AsyncDependencyError",
     "CircularDependencyError",
+    "Container",
     "DependencyError",
     "DependencyNotFoundError",
     "DuplicateDependencyError",

@@ -11,7 +11,6 @@ from do_as_beginner.base import AppConfig, BaseStruct
 from do_as_beginner.base.config.constants import APP_NAME, BASE_DIR
 from do_as_beginner.tasks.enums import QueueTier, queue_name
 
-from .di import get_default_container
 from .plugins import BlobsPlugin, OtelPlugin, QdrantPlugin, RedisPlugin
 
 __all__ = ("PluginCore",)
@@ -286,13 +285,6 @@ class PluginCore(BaseStruct):
 
     def setup_plugins(self) -> None:
         OtelPlugin(self.config).setup()
-
-        # plugins di injection
-        container = get_default_container()
-
-        for plugin in (
-            RedisPlugin(self.config, container),
-            QdrantPlugin(self.config, container),
-            BlobsPlugin(self.config, container),
-        ):
-            plugin.setup(**container.inject(plugin.setup))
+        RedisPlugin(self.config).setup()
+        QdrantPlugin(self.config).setup()
+        BlobsPlugin(self.config).setup()
