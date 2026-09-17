@@ -12,7 +12,7 @@ from do_as_beginner.base.config.constants import APP_NAME, BASE_DIR
 from do_as_beginner.tasks.enums import QueueTier, queue_name
 
 from .di import get_default_container
-from .plugins import OtelPlugin, QdrantPlugin, RedisPlugin
+from .plugins import BlobsPlugin, OtelPlugin, QdrantPlugin, RedisPlugin
 
 __all__ = ("PluginCore",)
 
@@ -72,6 +72,7 @@ class PluginCore(BaseStruct):
                 "django.contrib.staticfiles",
                 "django_async_backend",
                 "django_structlog",
+                "do_as_beginner.blobs",
                 "do_as_beginner.tasks",
             ]
         )
@@ -292,5 +293,6 @@ class PluginCore(BaseStruct):
         for plugin in (
             RedisPlugin(self.config, container),
             QdrantPlugin(self.config, container),
+            BlobsPlugin(self.config, container),
         ):
             plugin.setup(**container.inject(plugin.setup))

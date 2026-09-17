@@ -250,11 +250,16 @@ module = [
   "celery",
   "celery.*",
   "kombu",
+  "django_async_backend",
+  "django_async_backend.*",
 ]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib", "--asyncio-mode=auto"]
+markers = [
+  "pg: integration tests that require a real PostgreSQL (set DAB_TEST_PG_DSN to enable)",
+]
 filterwarnings = [
   "ignore::DeprecationWarning",
   "ignore::SyntaxWarning:jieba.*"

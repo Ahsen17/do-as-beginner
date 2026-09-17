@@ -4,6 +4,7 @@ from pydantic import Field
 
 from do_as_beginner.base.schemas import BaseStruct
 
+from .blobs import BlobsConfig
 from .cache import RedisConfig
 from .celery import CeleryConfig
 from .constants import BASE_DIR
@@ -25,6 +26,7 @@ class AppConfig(BaseStruct):
     postgres: PostgresConfig = Field(default_factory=PostgresConfig)
     qdrant: QdrantConfig = Field(default_factory=QdrantConfig)
 
+    blobs: BlobsConfig = Field(default_factory=BlobsConfig)
     celery: CeleryConfig = Field(default_factory=CeleryConfig)
     otel: OtelConfig = Field(default_factory=OtelConfig)
 
