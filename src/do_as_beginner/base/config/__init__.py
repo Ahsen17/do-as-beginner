@@ -1,3 +1,4 @@
+from .blobs import BlobsConfig
 from .cache import RedisConfig
 from .celery import CeleryConfig
 from .core import AppConfig
@@ -7,6 +8,7 @@ from .server import ServerConfig
 
 __all__ = (
     "AppConfig",
+    "BlobsConfig",
     "CeleryConfig",
     "OtelConfig",
     "PostgresConfig",
