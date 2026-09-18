@@ -28,6 +28,12 @@ def discover_plugins(config: "AppConfig") -> list[PluginProtocol]:
     """
 
     protocols = {PluginProtocol, AppPluginProtocol, CLIPluginProtocol}
+    # Built-ins only exist to discovery once their modules are imported; import
+    # the built-in plugin package here so they are found in every entrypoint
+    # without a hard-coded registration path (lazy: avoids the module-level
+    # import cycle with ``do_as_beginner.plugins``).
+    import do_as_beginner.plugins  # noqa: PLC0415,F401  # imported for subclass registration
+
     # dict.fromkeys dedupes a class found under two roots while keeping deterministic order
     classes = dict.fromkeys(
         cls
