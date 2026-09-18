@@ -33,4 +33,5 @@ class SystemController(BaseController):
 
     @property
     def urls(self) -> tuple[list[URLResolver | URLPattern], str, str]:
+
         return self.get_urls(), "system", self.name

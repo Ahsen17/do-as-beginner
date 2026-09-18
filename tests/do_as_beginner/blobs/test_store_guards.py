@@ -13,6 +13,7 @@ from do_as_beginner.blobs.storage import DatabaseBlobStore
 
 
 async def test_put_rejects_oversized_content_before_any_io() -> None:
+
     store = DatabaseBlobStore(max_blob_bytes=8)
 
     with pytest.raises(BlobTooLargeError, match="exceeds the 8-byte limit"):
@@ -20,6 +21,7 @@ async def test_put_rejects_oversized_content_before_any_io() -> None:
 
 
 async def test_get_rejects_invalid_key_before_any_io() -> None:
+
     store = DatabaseBlobStore(max_blob_bytes=8)
 
     with pytest.raises(BlobValidationError, match="Invalid blob key"):
@@ -27,6 +29,7 @@ async def test_get_rejects_invalid_key_before_any_io() -> None:
 
 
 async def test_info_rejects_invalid_key_before_any_io() -> None:
+
     store = DatabaseBlobStore(max_blob_bytes=8)
 
     with pytest.raises(BlobValidationError, match="Invalid blob key"):
@@ -34,6 +37,7 @@ async def test_info_rejects_invalid_key_before_any_io() -> None:
 
 
 async def test_exists_invalid_key_is_false_without_io() -> None:
+
     store = DatabaseBlobStore(max_blob_bytes=8)
 
     assert await store.exists("nothex") is False

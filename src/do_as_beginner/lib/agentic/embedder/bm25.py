@@ -67,6 +67,7 @@ class Bm25:
 
     @classmethod
     def compute_token_id(cls, token: str) -> int:
+
         return abs(mmh3.hash(token))
 
     @classmethod

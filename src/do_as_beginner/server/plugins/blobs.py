@@ -1,22 +1,19 @@
 from typing import TYPE_CHECKING
 
+from do_as_beginner.base import AppConfig
 from do_as_beginner.blobs.factory import BlobServiceFactory
-from do_as_beginner.server.depi import DI
-
-from .protocol import PluginProtocol
+from do_as_beginner.server.core import AppPluginProtocol
 
 if TYPE_CHECKING:
-    from do_as_beginner.base import AppConfig
+    from do_as_beginner.server.depi import Container
 
 
-class BlobsPlugin(PluginProtocol):
-    """Server plugin for the blob-storage facade"""
+class BlobsPlugin(AppPluginProtocol):
+    """Server plugin for the blob-storage facade (setup facet: DI registration)."""
 
-    def __init__(self, config: "AppConfig") -> None:
-        self._config = config
+    def on_app_init(self, container: "Container") -> None:
 
-    def setup(self) -> None:
-        DI.get_default_container().register(
-            BlobServiceFactory(self._config.blobs),
+        container.register(
+            BlobServiceFactory(AppConfig.load().blobs),
             key="blob_service_factory",
         )

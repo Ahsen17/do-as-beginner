@@ -259,12 +259,13 @@ ignore_missing_imports = true
 addopts = ["--import-mode=importlib", "--asyncio-mode=auto"]
 markers = [
   "pg: integration tests that require a real PostgreSQL (set DAB_TEST_PG_DSN to enable)",
+  "integration: end-to-end tests that drive the real assembly pipeline in subprocesses",
 ]
 filterwarnings = [
   "ignore::DeprecationWarning",
   "ignore::SyntaxWarning:jieba.*"
 ]
-testpaths = ["tests"]
+testpaths = ["tests", "tests_integration"]
 
 [tool.coverage.report]
 exclude_lines = [

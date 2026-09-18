@@ -55,6 +55,7 @@ class DatabaseBlobStore:
     """Content-addressed bytea backend backed by the :class:`Blob` model."""
 
     def __init__(self, max_blob_bytes: int = DEFAULT_MAX_BLOB_BYTES) -> None:
+
         if max_blob_bytes <= 0:
             msg = f"max_blob_bytes must be positive, got {max_blob_bytes}"
             raise BlobValidationError(msg)

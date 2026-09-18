@@ -45,6 +45,7 @@ class Blob(models.Model):
         ]
 
     def __str__(self) -> str:
+
         return str(self.key)
 
     @classmethod
@@ -118,6 +119,7 @@ class BlobReference(models.Model):
         ]
 
     def __str__(self) -> str:
+
         return f"{self.content_type}/{self.object_id}[{self.field or '-'}] -> {self.blob.key}"
 
     @classmethod

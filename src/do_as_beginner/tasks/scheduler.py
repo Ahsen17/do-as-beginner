@@ -9,12 +9,14 @@ Absorbs what used to be scattered ``beat``/``boot`` functions into one class:
 """
 
 import logging
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
 from celery.schedules import crontab
 from django.conf import settings
 
 from do_as_beginner.base import AppConfig
+from do_as_beginner.server.core import ContributionConflictError
 
 from . import decorators
 from .enums import QueueTier, queue_name
@@ -121,12 +123,27 @@ class Scheduler:
                 break
         return out
 
-    def __init__(self, tasks: TaskHandler | None = None, dead_letter: DeadLetterHandler | None = None) -> None:
+    def __init__(
+        self,
+        tasks: TaskHandler | None = None,
+        dead_letter: DeadLetterHandler | None = None,
+    ) -> None:
+
         self.tasks = tasks or TaskHandler()
         self.dead_letter = dead_letter or DeadLetterHandler(self.tasks)
 
-    def bootstrap(self, app: Any) -> None:
-        """Register internal tasks, connect lifecycle signals, refresh schedule."""
+    def bootstrap(
+        self,
+        app: Any,
+        plugin_beat_schedule: Mapping[str, dict[str, Any]] | None = None,
+    ) -> None:
+        """Register internal tasks, connect lifecycle signals, refresh schedule.
+
+        ``plugin_beat_schedule`` carries plugin-contributed beat entries (from
+        the assembly context); they are merged with the code-declared schedule
+        here -- after task import, so code-declared ``@periodic_task`` entries
+        and internal ticks are visible -- instead of being configured earlier.
+        """
 
         app.task(name=DeadLetterHandler.DRAIN_TASK)(self.dead_letter.drain)
         app.task(name=DeadLetterHandler.DISPATCH_DUE_TASK)(self.dead_letter.dispatch_due)
@@ -134,6 +151,12 @@ class Scheduler:
 
         cfg = AppConfig.load().celery
         schedule = self.build_beat_schedule(cfg)
+
+        for name, entry in (plugin_beat_schedule or {}).items():
+            if name in schedule:
+                msg = f"Beat entry {name!r} contributed by a plugin conflicts with a code-declared entry"
+                raise ContributionConflictError(msg)
+            schedule[name] = entry
         settings.CELERY_BEAT_SCHEDULE = schedule
         app.conf.beat_schedule = schedule
         logger.debug("dab task scheduler bootstrap complete")

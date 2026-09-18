@@ -1,7 +1,8 @@
-import atexit
 import logging
 import os
 import socket
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from logging import _nameToLevel
 from typing import TYPE_CHECKING
 
@@ -20,21 +21,28 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-from .protocol import PluginProtocol
+from do_as_beginner.base import AppConfig
+from do_as_beginner.server.core import AppPluginProtocol
 
 if TYPE_CHECKING:
-    from do_as_beginner.base import AppConfig
+    from do_as_beginner.server.depi import Container
 
 
 __all__ = ("OtelPlugin",)
 
 
-class OtelPlugin(PluginProtocol):
-    """Server plugin for OpenTelemetry."""
+class OtelPlugin(AppPluginProtocol):
+    """Server plugin for OpenTelemetry (setup + shutdown facets).
 
-    def __init__(self, config: "AppConfig") -> None:
+    Shutdown is managed by the plugin registry's unified pipeline instead of
+    self-registered ``atexit`` callbacks. The SDK providers keep their own
+    default ``atexit`` registration as a last-resort fallback; because an
+    explicit ``shutdown()`` unregisters it, the two paths cannot double-run.
+    """
 
-        self._config = config
+    def __init__(self) -> None:
+
+        self._config = AppConfig.load()
 
         hostname = socket.gethostname()
         pid = os.getpid()
@@ -46,8 +54,12 @@ class OtelPlugin(PluginProtocol):
                 "deployment.environment.name": self._config.server.environment,
             }
         )
+        self._tracer_provider: TracerProvider | None = None
+        self._meter_provider: MeterProvider | None = None
+        self._logger_provider: LoggerProvider | None = None
 
-    def setup(self) -> None:
+    def on_app_init(self, container: "Container") -> None:
+
         if not self._config.otel.enabled:
             return
 
@@ -62,6 +74,7 @@ class OtelPlugin(PluginProtocol):
             )
         )
         trace.set_tracer_provider(tracer_provider)
+        self._tracer_provider = tracer_provider
 
         # Metrics
         metric_reader = PeriodicExportingMetricReader(
@@ -76,6 +89,7 @@ class OtelPlugin(PluginProtocol):
             metric_readers=[metric_reader],
         )
         metrics.set_meter_provider(meter_provider)
+        self._meter_provider = meter_provider
 
         # Logs
         logger_provider = LoggerProvider(resource=self._otel_resource)
@@ -88,6 +102,7 @@ class OtelPlugin(PluginProtocol):
             )
         )
         set_logger_provider(logger_provider)
+        self._logger_provider = logger_provider
 
         otel_log_handler = LoggingHandler(
             level=_nameToLevel[self._config.server.log_level],
@@ -98,9 +113,30 @@ class OtelPlugin(PluginProtocol):
             python_logger = logging.getLogger(logger_name)
             python_logger.addHandler(otel_log_handler)
 
+    def shutdown(self) -> None:
+        """Flush and shut down the three providers (no-op when never set up)."""
+
+        # The SDK's shutdown() is idempotent per provider and unregisters its
+        # own atexit hook, so calling each here is safe.
+        if self._tracer_provider is not None:
+            self._tracer_provider.shutdown()
+        if self._meter_provider is not None:
+            self._meter_provider.shutdown()
+        if self._logger_provider is not None:
+            self._logger_provider.shutdown()
+
+    @asynccontextmanager
+    async def __lifespan__(self) -> AsyncGenerator[None, None]:
+
+        if not self._config.otel.enabled:
+            yield
+            return
+
         DjangoInstrumentor().instrument()
         RequestsInstrumentor().instrument()
 
-        atexit.register(tracer_provider.shutdown)
-        atexit.register(meter_provider.shutdown)
-        atexit.register(logger_provider.shutdown)
+        try:
+            yield
+
+        finally:
+            self.shutdown()

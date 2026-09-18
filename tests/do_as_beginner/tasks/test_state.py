@@ -16,6 +16,7 @@ _TASK_ID = "test-run-1"
 
 @pytest.fixture(autouse=True)
 def _clean_tables() -> Iterator[None]:
+
     DelayedRedelivery.objects.all().delete()
     TaskTrace.objects.all().delete()
     yield
@@ -28,6 +29,7 @@ def test_dispatch_passes_through_send_opts(monkeypatch) -> None:  # type: ignore
 
     class _FakeApp:
         def send_task(self, name: str, **opts: object) -> SimpleNamespace:
+
             sent["name"] = name
             sent["opts"] = opts
             return SimpleNamespace(id="abc-123")
@@ -59,6 +61,7 @@ def test_dispatch_passes_through_send_opts(monkeypatch) -> None:  # type: ignore
 
 
 def test_lifecycle_reaches_terminal_success() -> None:
+
     handler = TaskHandler()
     handler.record_initial(_TASK_ID, "t.demo", QueueTier.HIGH)
     handler.record_running(_TASK_ID, "t.demo", QueueTier.HIGH)
@@ -70,6 +73,7 @@ def test_lifecycle_reaches_terminal_success() -> None:
 
 
 def test_failure_records_error_and_is_rerunnable() -> None:
+
     handler = TaskHandler()
     handler.record_initial(_TASK_ID, "t.demo", QueueTier.DEFAULT)
     handler.record_failure(_TASK_ID, "t.demo", QueueTier.DEFAULT, "RuntimeError", "boom")
@@ -85,6 +89,7 @@ def test_failure_records_error_and_is_rerunnable() -> None:
 
 
 def test_success_is_terminal_frozen() -> None:
+
     handler = TaskHandler()
     handler.record_initial(_TASK_ID, "t.demo", QueueTier.DEFAULT)
     handler.record_running(_TASK_ID, "t.demo", QueueTier.DEFAULT)
@@ -95,6 +100,7 @@ def test_success_is_terminal_frozen() -> None:
 
 
 def test_dlq_budget_schedules_then_dead() -> None:
+
     dead_letter = DeadLetterHandler()
     headers = {"task": "t.demo", "id": _TASK_ID, "x-death": [{"queue": "dab.tasks.urgent"}]}
     payload: dict = {}
@@ -111,6 +117,7 @@ def test_dlq_budget_schedules_then_dead() -> None:
 
 
 def test_dead_is_terminal_frozen() -> None:
+
     handler = TaskHandler()
     handler.finalize_dead(_TASK_ID, "t.demo", QueueTier.DEFAULT, "Err", "x")
     handler.record_running(_TASK_ID, "t.demo", QueueTier.DEFAULT)
