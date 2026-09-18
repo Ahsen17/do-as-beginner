@@ -5,13 +5,11 @@ import os
 import sys
 
 from django.apps import apps
-from django.conf import settings
-from django.core.handlers.asgi import ASGIHandler
 
 from .base import AppConfig
 from .base.config.constants import APP_NAME
-from .cli.command import group
-from .server import PluginCore
+from .server import AppConfigCore, LifespanWrapper
+from .server.cli.command import group
 
 
 def set_environment() -> None:
@@ -28,12 +26,13 @@ def set_environment() -> None:
     os.environ.setdefault("DAB_SERVER_WORKERS", str(config.server.workers))
 
 
-def create_application() -> ASGIHandler:
+def create_application() -> LifespanWrapper:
+
     # Set environment variables
     set_environment()
 
-    if not settings.configured:
-        PluginCore().setup()
+    core = AppConfigCore()
+    core.setup()
 
     try:
         from django.core.asgi import get_asgi_application  # noqa: PLC0415
@@ -45,15 +44,20 @@ def create_application() -> ASGIHandler:
             "forget to activate a virtual environment?"
         ) from exc
 
-    return get_asgi_application()
+    # Wrap Django's ASGIHandler with the lifespan protocol: plugin-contributed
+    # resource lifetimes and the composition root's shutdown pipeline hang off
+    # lifespan.startup/shutdown (Django itself does not handle them).
+    lifespans = core.assembly.lifespans if core.assembly is not None else []
+    return LifespanWrapper(get_asgi_application(), lifespans)
 
 
 def celery_entrypoint() -> None:
+
     # Set environment variables
     set_environment()
 
-    if not settings.configured:
-        PluginCore().setup()
+    core = AppConfigCore()
+    core.setup()
 
     if not apps.ready:
         import django  # noqa: PLC0415
@@ -71,7 +75,10 @@ def celery_entrypoint() -> None:
     from .tasks.scheduler import Scheduler  # noqa: PLC0415
 
     argv = Scheduler.apply_worker_concurrency(list(sys.argv[1:]), AppConfig.load().celery)
-    Scheduler().bootstrap(cl)
+    scheduler = Scheduler()
+    plugin_beat = core.assembly.celery_beat_schedule if core.assembly is not None else {}
+
+    scheduler.bootstrap(cl, plugin_beat_schedule=plugin_beat)
 
     cl.start(argv=argv)
 
@@ -82,13 +89,10 @@ def entrypoint() -> None:
     # Set environment variables
     set_environment()
 
-    # Setup all plugins
-    if not settings.configured:
-        PluginCore().setup()
-
-    # Register plugins' cli commands
-    for typer in PluginCore.typers:
-        group.add_typer(typer)
+    # Assemble the server (Django settings, plugins; CLIPlugin facets inject
+    # their commands onto the root group during setup).
+    core = AppConfigCore()
+    core.setup()
 
     # Execute the commands.
     group()

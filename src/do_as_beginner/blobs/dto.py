@@ -6,7 +6,7 @@ from pydantic import ConfigDict
 
 from do_as_beginner.base.schemas import BaseStruct
 
-__all__ = ("BlobInfo", "info_from_values")
+__all__ = ("BlobInfo",)
 
 
 class BlobInfo(BaseStruct):

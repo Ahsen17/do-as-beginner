@@ -40,6 +40,7 @@ def require_http_methods(request_method_list: list[str]) -> Callable[[T], T]:
     """
 
     def decorator(func: T) -> T:
+
         unwrapped = cast("Any", func).__func__ if isinstance(func, classmethod | staticmethod) else func
         func_signature = signature(cast("Callable[..., Any]", unwrapped))
 
@@ -47,6 +48,7 @@ def require_http_methods(request_method_list: list[str]) -> Callable[[T], T]:
 
             @wraps(cast("Callable[..., Any]", unwrapped))
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+
                 request = cast(
                     "HttpRequest | None",
                     func_signature.bind_partial(*args, **kwargs).arguments.get("request"),
@@ -62,6 +64,7 @@ def require_http_methods(request_method_list: list[str]) -> Callable[[T], T]:
 
         @wraps(cast("Callable[..., Any]", unwrapped))
         def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+
             request = cast(
                 "HttpRequest | None",
                 func_signature.bind_partial(*args, **kwargs).arguments.get("request"),

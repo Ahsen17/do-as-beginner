@@ -1,3 +1,9 @@
+from .core import (
+    AppConfigCore,
+    CelerySettingsBuilder,
+    LifespanWrapper,
+    SettingsBuilder,
+)
 from .depi import (
     DI,
     AmbiguousDependencyError,
@@ -9,17 +15,37 @@ from .depi import (
     DuplicateDependencyError,
     NamedDependency,
 )
-from .setup import PluginCore
+from .plugin import (
+    AppPluginProtocol,
+    AssemblyContext,
+    CLIPluginProtocol,
+    ContributionConflictError,
+    DuplicatePluginError,
+    PluginProtocol,
+    PluginRegistry,
+    PluginSetupError,
+)
 
 __all__ = (
     "DI",
     "AmbiguousDependencyError",
+    "AppConfigCore",
+    "AppPluginProtocol",
+    "AssemblyContext",
     "AsyncDependencyError",
+    "CLIPluginProtocol",
+    "CelerySettingsBuilder",
     "CircularDependencyError",
     "Container",
+    "ContributionConflictError",
     "DependencyError",
     "DependencyNotFoundError",
     "DuplicateDependencyError",
+    "DuplicatePluginError",
+    "LifespanWrapper",
     "NamedDependency",
-    "PluginCore",
+    "PluginProtocol",
+    "PluginRegistry",
+    "PluginSetupError",
+    "SettingsBuilder",
 )

@@ -64,6 +64,7 @@ def task(
     """
 
     def decorator(fn: F) -> Any:
+
         celery_opts: dict[str, Any] = dict(opts)
         celery_opts["base"] = base
         bound = shared_task(name=name, **celery_opts)(fn)
@@ -94,6 +95,7 @@ def periodic_task(
         raise ValueError("exactly one of crontab or interval is required")
 
     def decorator(fn: F) -> Any:
+
         bound = shared_task(name=name, **opts)(fn)
         DECLARED_TIERS.setdefault(name, tier)
         PERIODIC_ENTRIES.append(

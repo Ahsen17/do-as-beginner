@@ -8,6 +8,7 @@ from do_as_beginner.tasks.scheduler import Scheduler
 
 
 def test_tier_of_maps_every_priority() -> None:
+
     assert tier_of(TaskPriority.LOW) is QueueTier.LOW
     assert tier_of(TaskPriority.DEFAULT) is QueueTier.DEFAULT
     assert tier_of(TaskPriority.HIGH) is QueueTier.HIGH
@@ -15,6 +16,7 @@ def test_tier_of_maps_every_priority() -> None:
 
 
 def test_queue_name_builds_prefixed_names() -> None:
+
     assert queue_name("dab.tasks", QueueTier.URGENT) == "dab.tasks.urgent"
     assert queue_name("queue", QueueTier.LOW) == "queue.low"
 
@@ -34,16 +36,19 @@ def test_queue_name_builds_prefixed_names() -> None:
     ],
 )
 def test_concurrency_injection(argv: list[str], expected: list[str]) -> None:
+
     cfg = CeleryConfig()
     assert Scheduler.apply_worker_concurrency(argv, cfg) == expected
 
 
 def test_crontab_parse_accepts_five_fields() -> None:
+
     spec = Scheduler._parse_crontab("30 1 * * *")
     assert 30 in spec.minute
     assert 1 in spec.hour
 
 
 def test_crontab_parse_rejects_wrong_field_count() -> None:
+
     with pytest.raises(ValueError):
         Scheduler._parse_crontab("30 1 * *")

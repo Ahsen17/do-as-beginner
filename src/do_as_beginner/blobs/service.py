@@ -73,6 +73,7 @@ class BlobService:
     """User-facing facade over a :class:`BlobStore` plus reference management."""
 
     def __init__(self, store: BlobStore) -> None:
+
         self._store = store
 
     async def put(self, content: bytes, *, content_type: str | None = None) -> BlobInfo:

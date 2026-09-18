@@ -55,6 +55,7 @@ _LAZY_ATTRS: dict[str, str] = {
 
 
 def __getattr__(name: str) -> Any:
+
     module_name = _LAZY_ATTRS.get(name)
     if module_name is not None:
         return getattr(import_module(f"{__name__}.{module_name}"), name)

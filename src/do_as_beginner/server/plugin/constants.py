@@ -1,0 +1,19 @@
+RESERVED_SETTING_KEYS: frozenset[str] = frozenset(
+    {
+        "ALLOWED_HOSTS",
+        "AUTH_PASSWORD_VALIDATORS",
+        "DATABASES",
+        "DEBUG",
+        "INSTALLED_APPS",
+        "LANGUAGE_CODE",
+        "LOGGING",
+        "MIDDLEWARE",
+        "ROOT_URLCONF",
+        "SECRET_KEY",
+        "STATIC_URL",
+        "TEMPLATES",
+        "TIME_ZONE",
+        "USE_I18N",
+        "USE_TZ",
+    }
+)

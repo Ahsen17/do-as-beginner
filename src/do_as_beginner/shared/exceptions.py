@@ -17,12 +17,14 @@ class ApplicationError(Exception):
         *,
         details: dict[str, Any] | None = None,
     ) -> None:
+
         self.message = message or self.default_message
         self.details = details or {}
 
         super().__init__(self.message)
 
     def as_dict(self) -> dict[str, Any]:
+
         error: dict[str, Any] = {
             "code": self.code,
             "message": self.message,

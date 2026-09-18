@@ -22,7 +22,10 @@ from .exceptions import (
 )
 from .schemas import EMPTY, NamedDependency, ParamSpec, Registration
 
-__all__ = ("DI",)
+__all__ = (
+    "DI",
+    "Container",
+)
 
 
 class Container:
@@ -39,6 +42,7 @@ class Container:
     )
 
     def __init__(self) -> None:
+
         self._registrations: dict[str, Registration] = {}
         self._type_index: dict[type, list[str]] = {}
         self._params_cache: WeakKeyDictionary[Callable[..., Any], list[ParamSpec]] = WeakKeyDictionary()
@@ -108,6 +112,7 @@ class Container:
             ).append(dep_key)
 
     def _lookup(self, key_or_type: str | type) -> Registration:
+
         if isinstance(key_or_type, str):
             registration = self._registrations.get(key_or_type)
             if registration is None:
@@ -125,11 +130,13 @@ class Container:
         return self._registrations[candidates[0]]
 
     def _provider_params(self, registration: Registration) -> list[ParamSpec]:
+
         if registration.params is None:
             registration.params = _introspect_params(registration.provider)
         return registration.params
 
     def _resolve_sync(self, registration: Registration, path: set[str]) -> Any:
+
         if registration.value is not EMPTY:
             return registration.value
         if registration.key in path:
@@ -154,6 +161,7 @@ class Container:
         return value
 
     async def _resolve_async(self, registration: Registration, path: set[str]) -> Any:
+
         if registration.value is not EMPTY:
             return registration.value
         if registration.key in path:
