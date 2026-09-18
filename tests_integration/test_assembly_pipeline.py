@@ -2,10 +2,10 @@
 
 Each test spawns a clean interpreter from a temporary working directory (no
 ``config.yaml``, so ``AppConfig`` defaults apply) and exercises a real
-entrypoint path: protocol-inheritance plugin discovery, a real
-``settings.configure()`` + ``django.setup()``, the real built-in plugin hooks,
-and the real ASGI/CLI surfaces. This complements the in-process unit tests,
-which stub ``settings``/``django.setup`` to make the pipeline runnable.
+entrypoint path: a real ``settings.configure()`` + ``django.setup()``,
+explicitly-registered plugin hooks (v3: no auto-discovery), and the real
+ASGI/CLI surfaces. This complements the in-process unit tests, which stub
+``settings``/``django.setup`` to make the pipeline runnable.
 """
 
 import json
@@ -31,13 +31,12 @@ def _run(code: str, tmp_path: Any) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_real_assembly_configures_django_and_builtin_plugins(tmp_path: Any) -> None:
-    """create_application() assembles real settings and wires all four built-in plugins into DI."""
+def test_real_assembly_configures_django(tmp_path: Any) -> None:
+    """create_application() assembles the real settings manifest end-to-end."""
 
     code = (
         "from do_as_beginner.asgi import create_application\n"
         "from django.conf import settings\n"
-        "from do_as_beginner.server.depi import DI\n"
         "app = create_application()\n"
         "print('configured:', settings.configured)\n"
         "print('has-admin:', 'django.contrib.admin' in settings.INSTALLED_APPS)\n"
@@ -45,10 +44,6 @@ def test_real_assembly_configures_django_and_builtin_plugins(tmp_path: Any) -> N
         "print('has-tasks:', 'do_as_beginner.tasks' in settings.INSTALLED_APPS)\n"
         "print('engine:', settings.DATABASES['default']['ENGINE'])\n"
         "print('root-urlconf:', settings.ROOT_URLCONF)\n"
-        "container = DI.get_default_container()\n"
-        "print('redis:', type(container.get('redis_factory')).__name__)\n"
-        "print('qdrant:', container.get('qdrant_client') is not None)\n"
-        "print('blob:', container.get('blob_service_factory') is not None)\n"
     )
     proc = _run(code, tmp_path)
 
@@ -60,9 +55,6 @@ def test_real_assembly_configures_django_and_builtin_plugins(tmp_path: Any) -> N
     assert lines["has-tasks"] == "True"
     assert lines["engine"] == "django_async_backend.db.backends.postgresql"
     assert lines["root-urlconf"] == "do_as_beginner.server.core.routes"
-    assert lines["redis"] == "RedisFactory"
-    assert lines["qdrant"] == "True"
-    assert lines["blob"] == "True"
 
 
 def test_django_check_passes_through_cli(tmp_path: Any) -> None:
@@ -168,22 +160,22 @@ def test_asgi_lifespan_startup_and_shutdown_complete(tmp_path: Any) -> None:
     ]
 
 
-def test_user_plugin_discovery_wires_di_and_cli(tmp_path: Any) -> None:
-    """A user-defined plugin is auto-discovered by protocol inheritance and wired end-to-end.
+def test_user_plugin_registration_wires_di_and_cli(tmp_path: Any) -> None:
+    """A user-defined plugin registered via the constructor is wired end-to-end.
 
-    Importing the plugin module before the entrypoint makes its class visible to
-    ``__subclasses__()`` discovery; ``on_app_init`` registers into DI and
-    ``on_cli_init`` contributes a command that the entrypoint then executes.
+    v3 registration is explicit: ``AppConfigCore(UserPlugin())``. The subprocess
+    drives the real pipeline (settings.configure + django.setup), then executes
+    the root group; ``on_app_init`` registers into DI and the ``on_cli_init``
+    command runs, resolving the DI registration.
     """
 
     code = (
         "import sys\n"
         "sys.argv = ['app', 'user-ping']\n"
+        "from do_as_beginner.server.core import AppPluginProtocol, CLIPluginProtocol\n"
         "from do_as_beginner.server.depi import Container, DI\n"
-        "from do_as_beginner.server.plugin import AppPluginProtocol, CLIPluginProtocol\n"
+        "from do_as_beginner.server.setup import AppConfigCore\n"
         "class UserPlugin(AppPluginProtocol, CLIPluginProtocol):\n"
-        "    def __init__(self, config):\n"
-        "        self.config = config\n"
         "    def on_app_init(self, container: Container) -> None:\n"
         "        container.register('user-plugin-ok', key='user_marker')\n"
         "    def on_cli_init(self, group) -> None:\n"
@@ -191,8 +183,10 @@ def test_user_plugin_discovery_wires_di_and_cli(tmp_path: Any) -> None:
         "        def ping() -> None:\n"
         "            print('USER_PING_OK')\n"
         "            print('marker:', DI.get_default_container().get('user_marker'))\n"
-        "from do_as_beginner.asgi import entrypoint\n"
-        "entrypoint()\n"
+        "core = AppConfigCore(UserPlugin())\n"
+        "core.setup()\n"
+        "from do_as_beginner.server.cli.command import group\n"
+        "group()\n"
     )
     proc = _run(code, tmp_path)
 

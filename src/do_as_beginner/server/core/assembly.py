@@ -38,12 +38,7 @@ class AssemblyContext(BaseStruct):
         self.middlewares.append(path)
 
     def add_setting(self, key: str, value: Any) -> None:
-        """Contribute an extra Django setting (later contributions overwrite earlier ones).
-
-        Raises:
-            ValueError: ``key`` is not all-uppercase.
-            ContributionConflictError: ``key`` is framework-reserved.
-        """
+        """Contribute an extra Django setting (later contributions overwrite earlier ones)"""
 
         if not key.isupper():
             msg = f"Setting key {key!r} must be all-uppercase"

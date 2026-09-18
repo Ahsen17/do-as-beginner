@@ -15,8 +15,9 @@ from kombu import Exchange, Queue
 
 from do_as_beginner.base import AppConfig
 from do_as_beginner.base.config.constants import APP_NAME, BASE_DIR
-from do_as_beginner.server.plugin import AssemblyContext, ContributionConflictError
 from do_as_beginner.tasks.enums import QueueTier, queue_name
+
+from .core import AssemblyContext, ContributionConflictError
 
 if TYPE_CHECKING:
     from do_as_beginner.base import CeleryConfig
@@ -207,7 +208,13 @@ class CelerySettingsBuilder:
     """
 
     @classmethod
-    def build(cls, config: AppConfig, assembly: AssemblyContext, *, installed_apps: list[str]) -> dict[str, Any]:
+    def build(
+        cls,
+        config: AppConfig,
+        assembly: AssemblyContext,
+        *,
+        installed_apps: list[str],
+    ) -> dict[str, Any]:
         """Return the ``CELERY_*`` manifest (does not include ``CELERY_BEAT_SCHEDULE``).
 
         Beat entries are assembled in ``Scheduler.bootstrap`` after task import --

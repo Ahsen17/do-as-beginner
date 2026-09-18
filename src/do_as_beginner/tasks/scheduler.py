@@ -16,6 +16,7 @@ from celery.schedules import crontab
 from django.conf import settings
 
 from do_as_beginner.base import AppConfig
+from do_as_beginner.server.core import ContributionConflictError
 
 from . import decorators
 from .enums import QueueTier, queue_name
@@ -142,10 +143,6 @@ class Scheduler:
         the assembly context); they are merged with the code-declared schedule
         here -- after task import, so code-declared ``@periodic_task`` entries
         and internal ticks are visible -- instead of being configured earlier.
-
-        Raises:
-            ContributionConflictError: a plugin entry name collides with a
-                code-declared/internal entry or with another plugin entry.
         """
 
         app.task(name=DeadLetterHandler.DRAIN_TASK)(self.dead_letter.drain)
@@ -154,7 +151,6 @@ class Scheduler:
 
         cfg = AppConfig.load().celery
         schedule = self.build_beat_schedule(cfg)
-        from do_as_beginner.server import ContributionConflictError  # noqa: PLC0415
 
         for name, entry in (plugin_beat_schedule or {}).items():
             if name in schedule:

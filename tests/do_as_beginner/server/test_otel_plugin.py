@@ -2,15 +2,14 @@
 
 import inspect
 
-from do_as_beginner.base import AppConfig
-from do_as_beginner.plugins import otel as otel_module
-from do_as_beginner.plugins.otel import OtelPlugin
 from do_as_beginner.server.depi import Container
+from do_as_beginner.server.plugins import otel as otel_module
+from do_as_beginner.server.plugins.otel import OtelPlugin
 
 
 def test_otel_plugin_on_app_init_is_noop_when_disabled(default_container: Container) -> None:
 
-    plugin = OtelPlugin(AppConfig.load())
+    plugin = OtelPlugin()
 
     plugin.on_app_init(default_container)
 

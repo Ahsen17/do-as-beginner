@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 from django.conf import settings
 
-from do_as_beginner.server import ContributionConflictError
+from do_as_beginner.server.core import ContributionConflictError
 from do_as_beginner.tasks.handlers import DeadLetterHandler
 from do_as_beginner.tasks.scheduler import Scheduler
 

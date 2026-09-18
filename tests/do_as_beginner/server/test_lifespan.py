@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from do_as_beginner.server import LifespanWrapper
+from do_as_beginner.server.core import LifespanWrapper
 
 
 class LifespanHarness:

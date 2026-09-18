@@ -8,8 +8,9 @@ from django.apps import apps
 
 from .base import AppConfig
 from .base.config.constants import APP_NAME
-from .server import AppConfigCore, LifespanWrapper
 from .server.cli.command import group
+from .server.core import LifespanWrapper
+from .server.setup import AppConfigCore
 
 
 def set_environment() -> None:

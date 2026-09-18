@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 
 import do_as_beginner.asgi as asgi_module
-from do_as_beginner.server import AppConfigCore
+from do_as_beginner.server.setup import AppConfigCore
 
 
 @pytest.fixture

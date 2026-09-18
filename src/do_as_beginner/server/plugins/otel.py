@@ -21,11 +21,11 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-from do_as_beginner.server import AppPluginProtocol
+from do_as_beginner.base import AppConfig
+from do_as_beginner.server.core import AppPluginProtocol
 
 if TYPE_CHECKING:
-    from do_as_beginner.base import AppConfig
-    from do_as_beginner.server import Container
+    from do_as_beginner.server.depi import Container
 
 
 __all__ = ("OtelPlugin",)
@@ -40,9 +40,9 @@ class OtelPlugin(AppPluginProtocol):
     explicit ``shutdown()`` unregisters it, the two paths cannot double-run.
     """
 
-    def __init__(self, config: "AppConfig") -> None:
+    def __init__(self) -> None:
 
-        self._config = config
+        self._config = AppConfig.load()
 
         hostname = socket.gethostname()
         pid = os.getpid()

@@ -5,8 +5,8 @@ from typing import Any
 
 import pytest
 
-from do_as_beginner.server.plugin import AssemblyContext, ContributionConflictError
-from do_as_beginner.server.plugin.constants import RESERVED_SETTING_KEYS
+from do_as_beginner.server.core import AssemblyContext, ContributionConflictError
+from do_as_beginner.server.core.constants import RESERVED_SETTING_KEYS
 
 
 def test_add_installed_app_dedupes_keeping_order() -> None:

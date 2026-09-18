@@ -3,8 +3,8 @@
 import pytest
 
 from do_as_beginner.base import AppConfig
-from do_as_beginner.server.core.settings import CelerySettingsBuilder, SettingsBuilder
-from do_as_beginner.server.plugin import AssemblyContext, ContributionConflictError
+from do_as_beginner.server.core import AssemblyContext, ContributionConflictError
+from do_as_beginner.server.settings import CelerySettingsBuilder, SettingsBuilder
 
 
 def test_settings_manifest_contains_framework_builtins() -> None:

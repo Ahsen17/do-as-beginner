@@ -6,15 +6,15 @@ from django.conf import settings
 from do_as_beginner.base import AppConfig
 from do_as_beginner.server.cli.command import group
 from do_as_beginner.server.depi import DI, Container
-from do_as_beginner.server.plugin import (
+
+from .core import (
     AppPluginProtocol,
     AssemblyContext,
     CLIPluginProtocol,
+    PluginProtocol,
     PluginRegistry,
     PluginSetupError,
 )
-from do_as_beginner.server.plugin.utils import discover_plugins
-
 from .settings import CelerySettingsBuilder, SettingsBuilder
 
 if TYPE_CHECKING:
@@ -27,9 +27,7 @@ __all__ = ("AppConfigCore",)
 class AppConfigCore:
     """Composition root for the server: discovered plugins, assembled once.
 
-    Plugins are discovered by protocol inheritance (see
-    :func:`~do_as_beginner.server.plugin.utils.discover_plugins`) -- there is no
-    explicit registration entry. ``setup()`` builds the settings manifest from
+    ``setup()`` builds the settings manifest from
     the loaded ``AppConfig``, runs a single ``settings.configure()`` +
     ``django.setup()``, then calls each plugin's ``on_app_init(container)`` and
     ``on_cli_init(root_group)`` hooks and collects plugin ``__lifespan__``
@@ -43,10 +41,14 @@ class AppConfigCore:
 
     _assembled: ClassVar["AppConfigCore | None"] = None
 
-    def __init__(self, container: Container | None = None) -> None:
+    def __init__(
+        self,
+        *plugins: PluginProtocol,
+        container: Container | None = None,
+    ) -> None:
 
         self._config = AppConfig.load()
-        self._plugin_registry = PluginRegistry(*discover_plugins(self._config))
+        self._plugin_registry = PluginRegistry(*plugins)
         self._assembly: AssemblyContext | None = None
         self._container: Container = container or DI.get_default_container()
         self._cli_group: Typer = group
